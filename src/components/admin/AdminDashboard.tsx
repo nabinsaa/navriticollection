@@ -443,47 +443,84 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
           </div>
         )}
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-          <KPICard
-            icon={<DollarSign className="w-5 h-5" />}
-            label="Total Revenue"
-            value={formatPrice(stats.totalRevenue)}
-            trend={revenueTrend}
-            color="emerald"
-          />
-          <KPICard
-            icon={<ShoppingCart className="w-5 h-5" />}
+        {/* KPI Cards - Premium Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Total Revenue - Featured Card */}
+          <div className="md:col-span-2 lg:col-span-1 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl shadow-lg p-6 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/10 rounded-full -ml-12 -mb-12"></div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                  <DollarSign className="w-6 h-6" />
+                </div>
+                {revenueTrend !== 0 && (
+                  <div className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${
+                    revenueTrend > 0 ? 'bg-white/20' : 'bg-red-500/20'
+                  }`}>
+                    {revenueTrend > 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                    {Math.abs(revenueTrend).toFixed(1)}%
+                  </div>
+                )}
+              </div>
+              <p className="text-emerald-100 text-sm font-medium mb-1">Total Revenue</p>
+              <p className="text-3xl font-bold mb-2">{formatPrice(stats.totalRevenue)}</p>
+              <p className="text-emerald-100 text-xs">
+                {dateRange === 'today' ? "Today's earnings" : 
+                 dateRange === '7days' ? 'Last 7 days' :
+                 dateRange === '30days' ? 'Last 30 days' :
+                 dateRange === '3months' ? 'Last 3 months' : 'This year'}
+              </p>
+            </div>
+          </div>
+
+          {/* Total Orders */}
+          <KPICardPremium
+            icon={<ShoppingCart className="w-6 h-6" />}
             label="Total Orders"
             value={stats.totalOrders.toString()}
             subtitle={`${stats.pendingOrders} pending`}
             color="blue"
+            trend={stats.totalOrders > 0 ? ((stats.completedOrders / stats.totalOrders) * 100).toFixed(0) + '% completed' : undefined}
           />
-          <KPICard
-            icon={<Users className="w-5 h-5" />}
+
+          {/* Customers */}
+          <KPICardPremium
+            icon={<Users className="w-6 h-6" />}
             label="Customers"
             value={stats.totalCustomers.toString()}
             subtitle={`${stats.newCustomersToday} new today`}
             color="purple"
+            trend={stats.newCustomersToday > 0 ? `+${stats.newCustomersToday} today` : undefined}
           />
-          <KPICard
-            icon={<Package className="w-5 h-5" />}
+
+          {/* Products */}
+          <KPICardPremium
+            icon={<Package className="w-6 h-6" />}
             label="Products"
             value={stats.activeProducts.toString()}
             subtitle={`${stats.lowStockProducts} low stock`}
             color="amber"
+            trend={stats.lowStockProducts > 0 ? `${stats.lowStockProducts} need attention` : 'All stocked'}
           />
-          <KPICard
-            icon={<TrendingUp className="w-5 h-5" />}
+
+          {/* Average Order Value */}
+          <KPICardPremium
+            icon={<TrendingUp className="w-6 h-6" />}
             label="Avg Order Value"
             value={formatPrice(stats.averageOrderValue)}
             color="rose"
+            trend={stats.averageOrderValue > 0 ? 'Per order' : undefined}
           />
-          <KPICard
-            icon={<CheckCircle2 className="w-5 h-5" />}
+
+          {/* Fulfillment Rate */}
+          <KPICardPremium
+            icon={<CheckCircle2 className="w-6 h-6" />}
             label="Fulfillment Rate"
             value={`${stats.fulfillmentRate}%`}
             color="teal"
+            trend={stats.fulfillmentRate >= 90 ? 'Excellent' : stats.fulfillmentRate >= 70 ? 'Good' : 'Needs attention'}
+            progress={stats.fulfillmentRate}
           />
         </div>
 
@@ -877,6 +914,102 @@ function KPICard({ icon, label, value, subtitle, trend, color }: KPICardProps) {
       <h3 className="text-xs text-stone-500 font-medium uppercase tracking-wide">{label}</h3>
       <p className="text-2xl font-bold text-stone-900 mt-1">{value}</p>
       {subtitle && <p className="text-xs text-stone-500 mt-1">{subtitle}</p>}
+    </div>
+  );
+}
+
+// Premium KPI Card Component
+interface KPICardPremiumProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  subtitle?: string;
+  trend?: string;
+  color: 'blue' | 'purple' | 'amber' | 'rose' | 'teal';
+  progress?: number;
+}
+
+function KPICardPremium({ icon, label, value, subtitle, trend, color, progress }: KPICardPremiumProps) {
+  const colorClasses = {
+    blue: {
+      bg: 'bg-blue-50',
+      icon: 'bg-blue-100 text-blue-600',
+      border: 'border-blue-200',
+      accent: 'text-blue-600'
+    },
+    purple: {
+      bg: 'bg-purple-50',
+      icon: 'bg-purple-100 text-purple-600',
+      border: 'border-purple-200',
+      accent: 'text-purple-600'
+    },
+    amber: {
+      bg: 'bg-amber-50',
+      icon: 'bg-amber-100 text-amber-600',
+      border: 'border-amber-200',
+      accent: 'text-amber-600'
+    },
+    rose: {
+      bg: 'bg-rose-50',
+      icon: 'bg-rose-100 text-rose-600',
+      border: 'border-rose-200',
+      accent: 'text-rose-600'
+    },
+    teal: {
+      bg: 'bg-teal-50',
+      icon: 'bg-teal-100 text-teal-600',
+      border: 'border-teal-200',
+      accent: 'text-teal-600'
+    }
+  };
+
+  const colors = colorClasses[color];
+
+  return (
+    <div className={`${colors.bg} rounded-2xl shadow-sm border ${colors.border} p-6 hover:shadow-lg transition-all duration-300 relative overflow-hidden group`}>
+      {/* Decorative background element */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-white/30 rounded-full -mr-16 -mt-16 group-hover:scale-110 transition-transform duration-500"></div>
+      
+      <div className="relative z-10">
+        {/* Icon and Label */}
+        <div className="flex items-center justify-between mb-4">
+          <div className={`p-3 rounded-xl ${colors.icon} shadow-sm`}>
+            {icon}
+          </div>
+          {trend && (
+            <span className={`text-xs font-semibold ${colors.accent} px-2 py-1 rounded-full bg-white/50`}>
+              {trend}
+            </span>
+          )}
+        </div>
+
+        {/* Value */}
+        <div className="mb-2">
+          <p className="text-sm font-medium text-stone-600 mb-1">{label}</p>
+          <p className="text-4xl font-bold text-stone-900">{value}</p>
+        </div>
+
+        {/* Subtitle */}
+        {subtitle && (
+          <p className="text-sm text-stone-600 font-medium">{subtitle}</p>
+        )}
+
+        {/* Progress Bar (for Fulfillment Rate) */}
+        {progress !== undefined && (
+          <div className="mt-4">
+            <div className="w-full bg-white/50 rounded-full h-2 overflow-hidden">
+              <div 
+                className={`h-full rounded-full transition-all duration-500 ${
+                  progress >= 90 ? 'bg-green-500' : 
+                  progress >= 70 ? 'bg-yellow-500' : 
+                  'bg-red-500'
+                }`}
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
