@@ -266,10 +266,30 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-stone-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <QuickAction icon={<Package className="w-6 h-6" />} label="Add Product" color="blue" />
-          <QuickAction icon={<Tag className="w-6 h-6" />} label="Create Coupon" color="green" />
-          <QuickAction icon={<MessageCircle className="w-6 h-6" />} label="Review Feedback" color="purple" />
-          <QuickAction icon={<Settings className="w-6 h-6" />} label="Store Settings" color="orange" />
+          <QuickAction 
+            icon={<Package className="w-6 h-6" />} 
+            label="Add Product" 
+            color="blue" 
+            onClick={() => onNavigate?.('products')}
+          />
+          <QuickAction 
+            icon={<Tag className="w-6 h-6" />} 
+            label="Create Coupon" 
+            color="green" 
+            onClick={() => onNavigate?.('coupons')}
+          />
+          <QuickAction 
+            icon={<MessageCircle className="w-6 h-6" />} 
+            label="Review Feedback" 
+            color="purple" 
+            onClick={() => onNavigate?.('reviews')}
+          />
+          <QuickAction 
+            icon={<Settings className="w-6 h-6" />} 
+            label="Store Settings" 
+            color="orange" 
+            onClick={() => onNavigate?.('settings')}
+          />
         </div>
       </div>
     </div>
@@ -314,9 +334,10 @@ interface QuickActionProps {
   icon: React.ReactNode;
   label: string;
   color: 'blue' | 'green' | 'purple' | 'orange';
+  onClick?: () => void;
 }
 
-function QuickAction({ icon, label, color }: QuickActionProps) {
+function QuickAction({ icon, label, color, onClick }: QuickActionProps) {
   const colorClasses = {
     blue: 'bg-blue-50 text-blue-600 hover:bg-blue-100',
     green: 'bg-green-50 text-green-600 hover:bg-green-100',
@@ -325,7 +346,10 @@ function QuickAction({ icon, label, color }: QuickActionProps) {
   };
 
   return (
-    <button className={`p-4 rounded-lg flex flex-col items-center gap-2 transition-colors ${colorClasses[color]}`}>
+    <button 
+      onClick={onClick}
+      className={`p-4 rounded-lg flex flex-col items-center gap-2 transition-colors ${colorClasses[color]}`}
+    >
       {icon}
       <span className="text-sm font-medium">{label}</span>
     </button>

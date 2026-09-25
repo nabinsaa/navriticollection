@@ -18,6 +18,7 @@ interface Product {
   description: string;
   story: string;
   image: string;
+  additional_images?: string[];
   rating: number;
   reviews: number;
   intensity: number;
@@ -353,9 +354,11 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
     is_featured: product?.is_featured || false,
     is_new_arrival: product?.is_new_arrival || false,
     is_bestseller: product?.is_bestseller || false,
+    additional_images: product?.additional_images || [],
   });
 
   const [imagePreview, setImagePreview] = useState<string>(product?.image || '');
+  const [additionalImagePreviews, setAdditionalImagePreviews] = useState<string[]>(product?.additional_images || []);
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -375,9 +378,44 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
     }
   };
 
+  const handleAdditionalImagesUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (files) {
+      const newImages: string[] = [];
+      let processedCount = 0;
+
+      Array.from(files).forEach((file) => {
+        if (file.size > 5 * 1024 * 1024) {
+          alert(`File ${file.name} is too large. Max size is 5MB`);
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64 = reader.result as string;
+          newImages.push(base64);
+          processedCount++;
+
+          if (processedCount === files.length) {
+            const updatedImages = [...additionalImagePreviews, ...newImages].slice(0, 5);
+            setAdditionalImagePreviews(updatedImages);
+            setFormData({ ...formData, additional_images: updatedImages });
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+  };
+
   const removeImage = () => {
     setImagePreview('');
     setFormData({ ...formData, image: '' });
+  };
+
+  const removeAdditionalImage = (index: number) => {
+    const updatedImages = additionalImagePreviews.filter((_, i) => i !== index);
+    setAdditionalImagePreviews(updatedImages);
+    setFormData({ ...formData, additional_images: updatedImages });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -600,10 +638,10 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
             />
           </div>
 
-          {/* Image Upload */}
+          {/* Main Image Upload */}
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-2">
-              Product Image *
+              Main Product Image *
             </label>
             {imagePreview ? (
               <div className="relative w-48 h-48">
@@ -633,6 +671,49 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
                 />
               </label>
             )}
+          </div>
+
+          {/* Additional Images Upload */}
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-2">
+              Additional Images (Optional - Max 5)
+            </label>
+            <div className="flex flex-wrap gap-3">
+              {additionalImagePreviews.map((img, index) => (
+                <div key={index} className="relative w-32 h-32">
+                  <img
+                    src={img}
+                    alt={`Additional ${index + 1}`}
+                    className="w-full h-full object-cover rounded-lg border-2 border-stone-200"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeAdditionalImage(index)}
+                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-lg"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+              {additionalImagePreviews.length < 5 && (
+                <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-stone-300 rounded-lg cursor-pointer hover:border-stone-400 hover:bg-stone-50 transition-all">
+                  <Upload className="w-8 h-8 text-stone-400" />
+                  <span className="text-xs text-stone-600 mt-1 font-medium text-center px-2">
+                    Add Image
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleAdditionalImagesUpload}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+            <p className="text-xs text-stone-500 mt-2">
+              Upload up to 5 additional product images. These will be shown in the product gallery.
+            </p>
           </div>
 
           {/* Actions */}
