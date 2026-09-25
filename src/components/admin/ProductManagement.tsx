@@ -301,6 +301,358 @@ export default function ProductManagement() {
           </table>
         </div>
       )}
+
+      {/* Add/Edit Product Modal */}
+      {(showAddModal || editingProduct) && (
+        <ProductModal
+          product={editingProduct}
+          onClose={() => {
+            setShowAddModal(false);
+            setEditingProduct(null);
+          }}
+          onSave={() => {
+            setShowAddModal(false);
+            setEditingProduct(null);
+            loadProducts();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+interface ProductModalProps {
+  product: Product | null;
+  onClose: () => void;
+  onSave: () => void;
+}
+
+function ProductModal({ product, onClose, onSave }: ProductModalProps) {
+  const [formData, setFormData] = useState({
+    name: product?.name || '',
+    origin: product?.origin || '',
+    region: product?.region || '',
+    category: product?.category || 'Saree',
+    price: product?.price || 0,
+    weight: product?.weight || '',
+    material: product?.material || '',
+    process: product?.process || '',
+    size: product?.size || '',
+    color: product?.color || [],
+    description: product?.description || '',
+    story: product?.story || '',
+    image: product?.image || '',
+    rating: product?.rating || 4.5,
+    reviews: product?.reviews || 0,
+    intensity: product?.intensity || 3,
+    tags: product?.tags || [],
+    stock_quantity: product?.stock_quantity || 100,
+    low_stock_threshold: product?.low_stock_threshold || 10,
+    sku: product?.sku || '',
+    discount_price: product?.discount_price || null,
+    is_featured: product?.is_featured || false,
+    is_new_arrival: product?.is_new_arrival || false,
+    is_bestseller: product?.is_bestseller || false,
+  });
+
+  const [imagePreview, setImagePreview] = useState<string>(product?.image || '');
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Image size should be less than 5MB');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        setImagePreview(base64);
+        setFormData({ ...formData, image: base64 });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImagePreview('');
+    setFormData({ ...formData, image: '' });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    try {
+      if (product) {
+        // Update existing product
+        const { error } = await supabase
+          .from('products')
+          .update(formData)
+          .eq('id', product.id);
+
+        if (error) throw error;
+      } else {
+        // Add new product
+        const { error } = await supabase
+          .from('products')
+          .insert([formData]);
+
+        if (error) throw error;
+      }
+
+      onSave();
+    } catch (error) {
+      console.error('Error saving product:', error);
+      alert('Failed to save product');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-stone-200">
+          <h3 className="text-xl font-bold text-stone-900">
+            {product ? 'Edit Product' : 'Add New Product'}
+          </h3>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Basic Info */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Product Name *</label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">SKU</label>
+              <input
+                type="text"
+                value={formData.sku}
+                onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+              />
+            </div>
+          </div>
+
+          {/* Origin & Category */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Origin *</label>
+              <input
+                type="text"
+                required
+                value={formData.origin}
+                onChange={(e) => setFormData({ ...formData, origin: e.target.value })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Region *</label>
+              <input
+                type="text"
+                required
+                value={formData.region}
+                onChange={(e) => setFormData({ ...formData, region: e.target.value })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Category *</label>
+              <select
+                required
+                value={formData.category}
+                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+              >
+                <option value="Saree">Saree</option>
+                <option value="Kurti">Kurti</option>
+                <option value="Suit Set">Suit Set</option>
+                <option value="Dupatta">Dupatta</option>
+                <option value="Lehenga">Lehenga</option>
+                <option value="Gown">Gown</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Pricing */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Price *</label>
+              <input
+                type="number"
+                required
+                step="0.01"
+                value={formData.price}
+                onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Discount Price</label>
+              <input
+                type="number"
+                step="0.01"
+                value={formData.discount_price || ''}
+                onChange={(e) => setFormData({ ...formData, discount_price: e.target.value ? parseFloat(e.target.value) : null })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Weight</label>
+              <input
+                type="text"
+                value={formData.weight}
+                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+              />
+            </div>
+          </div>
+
+          {/* Stock Management */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Stock Quantity</label>
+              <input
+                type="number"
+                value={formData.stock_quantity}
+                onChange={(e) => setFormData({ ...formData, stock_quantity: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Low Stock Threshold</label>
+              <input
+                type="number"
+                value={formData.low_stock_threshold}
+                onChange={(e) => setFormData({ ...formData, low_stock_threshold: parseInt(e.target.value) })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-1">Size</label>
+              <input
+                type="text"
+                value={formData.size}
+                onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+              />
+            </div>
+          </div>
+
+          {/* Badges */}
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.is_featured}
+                onChange={(e) => setFormData({ ...formData, is_featured: e.target.checked })}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium text-stone-700">Featured</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.is_new_arrival}
+                onChange={(e) => setFormData({ ...formData, is_new_arrival: e.target.checked })}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium text-stone-700">New Arrival</span>
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={formData.is_bestseller}
+                onChange={(e) => setFormData({ ...formData, is_bestseller: e.target.checked })}
+                className="w-4 h-4"
+              />
+              <span className="text-sm font-medium text-stone-700">Bestseller</span>
+            </label>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Description *</label>
+            <textarea
+              required
+              rows={3}
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+            />
+          </div>
+
+          {/* Story */}
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-1">Story</label>
+            <textarea
+              rows={3}
+              value={formData.story}
+              onChange={(e) => setFormData({ ...formData, story: e.target.value })}
+              className="w-full px-3 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+            />
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-2">
+              Product Image *
+            </label>
+            {imagePreview ? (
+              <div className="relative w-48 h-48">
+                <img
+                  src={imagePreview}
+                  alt="Preview"
+                  className="w-full h-full object-cover rounded-lg border-2 border-stone-200"
+                />
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-lg"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-48 h-48 border-2 border-dashed border-stone-300 rounded-lg cursor-pointer hover:border-stone-400 hover:bg-stone-50 transition-all">
+                <Upload className="w-12 h-12 text-stone-400" />
+                <span className="text-sm text-stone-600 mt-2 font-medium">Click to upload</span>
+                <span className="text-xs text-stone-500 mt-1">PNG, JPG up to 5MB</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3 pt-4 border-t border-stone-200">
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-stone-900 text-white rounded-lg hover:bg-stone-800 transition-colors"
+            >
+              {product ? 'Update Product' : 'Add Product'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-stone-300 text-stone-700 rounded-lg hover:bg-stone-50 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

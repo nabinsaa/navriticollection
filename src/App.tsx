@@ -6,9 +6,13 @@ import { SettingsProvider } from './context/SettingsContext';
 import { categories, Product } from './data/products';
 import Header from './components/Header';
 import ProductCard from './components/ProductCard';
+import ProductDetail from './components/ProductDetail';
 import Cart from './components/Cart';
 import Sidebar from './components/Sidebar';
 import LoginModal from './components/LoginModal';
+import OrdersPage from './components/OrdersPage';
+import WishlistPage from './components/WishlistPage';
+import CheckoutPage from './components/CheckoutPage';
 import AdminPanel from './components/admin/AdminPanel';
 import { supabase, isSupabaseConnected } from './lib/supabase';
 
@@ -177,17 +181,17 @@ function AppContent() {
         )}
 
         {currentView === 'orders' && (
-          <div className="text-center py-20">
-            <h2 className="text-3xl font-serif text-stone-900 mb-4">My Orders</h2>
-            <p className="text-stone-600">Order history will appear here</p>
-          </div>
+          <OrdersPage 
+            onBack={() => setCurrentView('shop')} 
+            onLoginClick={() => setLoginModalOpen(true)}
+          />
         )}
 
         {currentView === 'wishlist' && (
-          <div className="text-center py-20">
-            <h2 className="text-3xl font-serif text-stone-900 mb-4">My Wishlist</h2>
-            <p className="text-stone-600">Your saved items will appear here</p>
-          </div>
+          <WishlistPage 
+            onBack={() => setCurrentView('shop')} 
+            onLoginClick={() => setLoginModalOpen(true)}
+          />
         )}
 
         {currentView === 'admin' && (
@@ -195,29 +199,22 @@ function AppContent() {
         )}
 
         {currentView === 'checkout' && (
-          <div className="text-center py-20">
-            <h2 className="text-3xl font-serif text-stone-900 mb-4">Checkout</h2>
-            <p className="text-stone-600">Checkout page will appear here</p>
-            <button
-              onClick={() => setCurrentView('shop')}
-              className="mt-6 px-6 py-3 bg-stone-900 text-white rounded-full font-medium hover:bg-stone-800 transition-colors"
-            >
-              Back to Shop
-            </button>
-          </div>
+          <CheckoutPage
+            onBack={() => {
+              setCurrentView('shop');
+              setCartOpen(true);
+            }}
+            onComplete={() => {
+              setCurrentView('orders');
+            }}
+          />
         )}
 
         {currentView === 'product-detail' && selectedProduct && (
-          <div className="text-center py-20">
-            <h2 className="text-3xl font-serif text-stone-900 mb-4">{selectedProduct.name}</h2>
-            <p className="text-stone-600">Product detail page will appear here</p>
-            <button
-              onClick={() => setCurrentView('shop')}
-              className="mt-6 px-6 py-3 bg-stone-900 text-white rounded-full font-medium hover:bg-stone-800 transition-colors"
-            >
-              Back to Shop
-            </button>
-          </div>
+          <ProductDetail
+            product={selectedProduct}
+            onBack={() => setCurrentView('shop')}
+          />
         )}
       </main>
     </div>
