@@ -32,6 +32,15 @@ interface Settings {
   store_twitter: string;
   store_youtube: string;
   store_whatsapp: string;
+  contact_title: string;
+  contact_subtitle: string;
+  contact_email: string;
+  contact_phone: string;
+  contact_address: string;
+  contact_hours: string;
+  footer_about: string;
+  footer_copyright: string;
+  footer_links: string;
 }
 
 export default function SettingsPage() {
@@ -65,10 +74,19 @@ export default function SettingsPage() {
     store_twitter: '',
     store_youtube: '',
     store_whatsapp: '',
+    contact_title: '',
+    contact_subtitle: '',
+    contact_email: '',
+    contact_phone: '',
+    contact_address: '',
+    contact_hours: '',
+    footer_about: '',
+    footer_copyright: '',
+    footer_links: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'images' | 'hero' | 'pricing' | 'orders' | 'features' | 'social'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'images' | 'hero' | 'pricing' | 'orders' | 'features' | 'social' | 'contact' | 'footer'>('general');
 
   useEffect(() => {
     loadSettings();
@@ -113,6 +131,15 @@ export default function SettingsPage() {
         store_twitter: settingsMap.store_twitter || '',
         store_youtube: settingsMap.store_youtube || '',
         store_whatsapp: settingsMap.store_whatsapp || '',
+        contact_title: settingsMap.contact_title || 'Get in Touch',
+        contact_subtitle: settingsMap.contact_subtitle || 'We\'d love to hear from you',
+        contact_email: settingsMap.contact_email || '',
+        contact_phone: settingsMap.contact_phone || '',
+        contact_address: settingsMap.contact_address || '',
+        contact_hours: settingsMap.contact_hours || '',
+        footer_about: settingsMap.footer_about || '',
+        footer_copyright: settingsMap.footer_copyright || '',
+        footer_links: settingsMap.footer_links || '',
       });
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -190,6 +217,8 @@ export default function SettingsPage() {
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'features', label: 'Features', icon: SettingsIcon },
     { id: 'social', label: 'Social Media', icon: Share2 },
+    { id: 'contact', label: 'Contact', icon: Bell },
+    { id: 'footer', label: 'Footer', icon: Truck },
   ];
 
   return (
@@ -706,6 +735,127 @@ export default function SettingsPage() {
                       className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
                       placeholder="+1 234 567 8900"
                     />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Contact Tab */}
+          {activeTab === 'contact' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
+                  <Bell className="w-5 h-5" />
+                  Contact Information
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Contact Title</label>
+                    <input
+                      type="text"
+                      value={settings.contact_title}
+                      onChange={(e) => setSettings({ ...settings, contact_title: e.target.value })}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Get in Touch"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Contact Subtitle</label>
+                    <input
+                      type="text"
+                      value={settings.contact_subtitle}
+                      onChange={(e) => setSettings({ ...settings, contact_subtitle: e.target.value })}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="We'd love to hear from you"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 mb-2">Contact Email</label>
+                      <input
+                        type="email"
+                        value={settings.contact_email}
+                        onChange={(e) => setSettings({ ...settings, contact_email: e.target.value })}
+                        className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                        placeholder="contact@vastraelegance.com"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-stone-700 mb-2">Contact Phone</label>
+                      <input
+                        type="tel"
+                        value={settings.contact_phone}
+                        onChange={(e) => setSettings({ ...settings, contact_phone: e.target.value })}
+                        className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                        placeholder="+91 98765 43210"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Contact Address</label>
+                    <textarea
+                      value={settings.contact_address}
+                      onChange={(e) => setSettings({ ...settings, contact_address: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="123 Silk Street, Mumbai, Maharashtra 400001, India"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Business Hours</label>
+                    <textarea
+                      value={settings.contact_hours}
+                      onChange={(e) => setSettings({ ...settings, contact_hours: e.target.value })}
+                      rows={2}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Monday - Saturday: 10:00 AM - 7:00 PM"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Footer Tab */}
+          {activeTab === 'footer' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
+                  <Truck className="w-5 h-5" />
+                  Footer Settings
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">About Text</label>
+                    <textarea
+                      value={settings.footer_about}
+                      onChange={(e) => setSettings({ ...settings, footer_about: e.target.value })}
+                      rows={4}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Brief description about your store for the footer"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Copyright Text</label>
+                    <input
+                      type="text"
+                      value={settings.footer_copyright}
+                      onChange={(e) => setSettings({ ...settings, footer_copyright: e.target.value })}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="© 2026 Vastra Elegance. All rights reserved."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Footer Links (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={settings.footer_links}
+                      onChange={(e) => setSettings({ ...settings, footer_links: e.target.value })}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Privacy Policy,Terms of Service,Shipping Policy,Return Policy"
+                    />
+                    <p className="text-xs text-stone-500 mt-1">Enter link names separated by commas</p>
                   </div>
                 </div>
               </div>

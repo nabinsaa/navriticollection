@@ -77,7 +77,16 @@ insert into public.store_settings (setting_key, setting_value) values
   ('tax_rate', '0'),
   ('enable_reviews', 'true'),
   ('enable_wishlist', 'true'),
-  ('enable_notifications', 'true')
+  ('enable_notifications', 'true'),
+  ('contact_title', 'Get in Touch'),
+  ('contact_subtitle', 'We''d love to hear from you'),
+  ('contact_email', ''),
+  ('contact_phone', ''),
+  ('contact_address', ''),
+  ('contact_hours', ''),
+  ('footer_about', ''),
+  ('footer_copyright', ''),
+  ('footer_links', '')
 on conflict (setting_key) do nothing;
 
 -- ============================================

@@ -29,6 +29,15 @@ interface Settings {
   store_twitter: string;
   store_youtube: string;
   store_whatsapp: string;
+  contact_title: string;
+  contact_subtitle: string;
+  contact_email: string;
+  contact_phone: string;
+  contact_address: string;
+  contact_hours: string;
+  footer_about: string;
+  footer_copyright: string;
+  footer_links: string;
 }
 
 interface SettingsContextType {
@@ -65,6 +74,15 @@ const defaultSettings: Settings = {
   store_twitter: '',
   store_youtube: '',
   store_whatsapp: '',
+  contact_title: 'Get in Touch',
+  contact_subtitle: 'We\'d love to hear from you',
+  contact_email: '',
+  contact_phone: '',
+  contact_address: '',
+  contact_hours: '',
+  footer_about: '',
+  footer_copyright: '',
+  footer_links: '',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -111,6 +129,15 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         store_twitter: settingsMap.store_twitter || '',
         store_youtube: settingsMap.store_youtube || '',
         store_whatsapp: settingsMap.store_whatsapp || '',
+        contact_title: settingsMap.contact_title || 'Get in Touch',
+        contact_subtitle: settingsMap.contact_subtitle || 'We\'d love to hear from you',
+        contact_email: settingsMap.contact_email || '',
+        contact_phone: settingsMap.contact_phone || '',
+        contact_address: settingsMap.contact_address || '',
+        contact_hours: settingsMap.contact_hours || '',
+        footer_about: settingsMap.footer_about || '',
+        footer_copyright: settingsMap.footer_copyright || '',
+        footer_links: settingsMap.footer_links || '',
       });
     } catch (error) {
       console.error('Error loading settings:', error);
