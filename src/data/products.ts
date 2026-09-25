@@ -25,6 +25,7 @@ export interface Product {
   is_new_arrival?: boolean;
   is_bestseller?: boolean;
   additional_images?: string[];
+  created_at?: string;
 }
 
 export const products: Product[] = [];

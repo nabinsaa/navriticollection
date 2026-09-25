@@ -14,6 +14,7 @@ import OrdersPage from './components/OrdersPage';
 import WishlistPage from './components/WishlistPage';
 import CheckoutPage from './components/CheckoutPage';
 import AdminPanel from './components/admin/AdminPanel';
+import ShopCollection from './components/ShopCollection';
 import { supabase, isSupabaseConnected } from './lib/supabase';
 
 type View = 'shop' | 'orders' | 'wishlist' | 'quotes' | 'submit-quote' | 'feedback' | 'admin' | 'checkout' | 'product-detail';
@@ -104,80 +105,24 @@ function AppContent() {
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {currentView === 'shop' && (
-          <>
-            {/* Hero Section */}
-            <section className="text-center py-12 mb-8">
-              <h1 className="text-4xl md:text-6xl font-serif text-stone-900 mb-4 tracking-tight">
-                Vastra Elegance
-              </h1>
-              <p className="text-lg md:text-xl text-stone-600 max-w-2xl mx-auto leading-relaxed">
-                Discover exquisite traditional clothing crafted with passion and heritage.
-              </p>
-            </section>
-
-            {/* Category Filters */}
-            <section className="mb-8">
-              <div className="flex flex-wrap gap-2 justify-center">
-                {categories.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => setSelectedCategory(category)}
-                    className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all ${
-                      selectedCategory === category
-                        ? 'bg-stone-900 text-white shadow-lg'
-                        : 'bg-white text-stone-700 border border-stone-200 hover:border-stone-900'
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
-            </section>
-
-            {/* Products Grid */}
-            {isLoadingProducts ? (
-              <div className="text-center py-12">
-                <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-stone-900"></div>
-                <p className="text-stone-600 mt-4">Loading products...</p>
-              </div>
-            ) : filteredProducts.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="text-6xl mb-4">🛍️</div>
-                <h3 className="text-2xl font-serif text-stone-900 mb-2">
-                  {selectedCategory === 'All' ? 'No Products Yet' : `No ${selectedCategory} Products`}
-                </h3>
-                <p className="text-stone-600 mb-6">
-                  {isAdmin ? 'Start by adding products from the Admin Panel!' : 'Check back soon for new arrivals!'}
-                </p>
-                {isAdmin && (
-                  <button
-                    onClick={() => setCurrentView('admin')}
-                    className="px-6 py-3 bg-stone-900 text-white rounded-full font-medium hover:bg-stone-800 transition-colors"
-                  >
-                    Go to Admin Panel
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredProducts.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    onClick={() => {
-                      setSelectedProduct(product);
-                      setCurrentView('product-detail');
-                    }}
-                    onAddToCart={() => {
-                      addToCart(product);
-                      // Don't auto-open cart, just add to cart
-                      // User can manually open cart by clicking cart icon
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </>
+          <ShopCollection
+            categories={categories}
+            onProductClick={(product: Product) => {
+              setSelectedProduct(product);
+              setCurrentView('product-detail');
+            }}
+            onAddToCart={(product: Product) => {
+              addToCart(product);
+              // Show success feedback
+              const toast = document.createElement('div');
+              toast.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-in';
+              toast.textContent = '✓ Added to cart';
+              document.body.appendChild(toast);
+              setTimeout(() => toast.remove(), 2000);
+            }}
+            isAdmin={isAdmin}
+            onGoToAdmin={() => setCurrentView('admin')}
+          />
         )}
 
         {currentView === 'orders' && (
