@@ -1,37 +1,73 @@
 import { useState, useEffect } from 'react';
-import { DollarSign, ShoppingCart, Users, Package, TrendingUp, AlertTriangle, Star, MessageCircle, Tag, Truck, Bell, Settings, ChevronRight, Calendar, Filter } from 'lucide-react';
+import { 
+  DollarSign, ShoppingCart, Users, Package, TrendingUp, TrendingDown,
+  AlertTriangle, Star, MessageCircle, Tag, Truck, Bell, Settings, 
+  ChevronRight, Calendar, Filter, Activity, Eye, Clock, CheckCircle2,
+  XCircle, ArrowUpRight, ArrowDownRight, RefreshCw, Download, Sparkles
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCurrency } from '../../context/CurrencyContext';
+import { useAuth } from '../../context/AuthContext';
 
-interface Order {
+interface DashboardStats {
+  totalRevenue: number;
+  todayRevenue: number;
+  yesterdayRevenue: number;
+  weekRevenue: number;
+  monthRevenue: number;
+  totalOrders: number;
+  pendingOrders: number;
+  confirmedOrders: number;
+  processingOrders: number;
+  shippedOrders: number;
+  completedOrders: number;
+  cancelledOrders: number;
+  totalCustomers: number;
+  newCustomersToday: number;
+  activeProducts: number;
+  lowStockProducts: number;
+  outOfStockProducts: number;
+  averageOrderValue: number;
+  totalReviews: number;
+  averageRating: number;
+  pendingQuotes: number;
+  newNotifications: number;
+  fulfillmentRate: number;
+}
+
+interface RecentOrder {
   id: string;
   total: number;
   status: string;
   created_at: string;
-  customer_name: string;
-  items?: Array<{
-    product: {
-      id: number;
-      name: string;
-      price: number;
-      image: string;
-    };
-    quantity: number;
-  }>;
+  customer: { name: string; email: string };
+  items_count: number;
 }
 
-interface Product {
+interface TopProduct {
   id: number;
   name: string;
   image: string;
-  is_active: boolean;
-  stock_quantity?: number;
-  low_stock_threshold?: number;
-  sku?: string;
+  category: string;
+  sales_count: number;
+  revenue: number;
 }
 
-interface Review {
-  rating: number;
+interface RecentCustomer {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  orders_count: number;
+  total_spent: number;
+}
+
+interface Alert {
+  type: 'warning' | 'info' | 'success' | 'error';
+  title: string;
+  message: string;
+  action?: string;
+  navigateTo?: string;
 }
 
 interface AdminDashboardProps {
@@ -40,120 +76,188 @@ interface AdminDashboardProps {
 
 export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
   const { formatPrice } = useCurrency();
-  const [stats, setStats] = useState({
-    totalRevenue: 0,
-    todayRevenue: 0,
-    weekRevenue: 0,
-    monthRevenue: 0,
-    totalOrders: 0,
-    pendingOrders: 0,
-    completedOrders: 0,
-    cancelledOrders: 0,
-    totalCustomers: 0,
-    activeProducts: 0,
-    lowStockProducts: 0,
-    averageOrderValue: 0,
-    totalReviews: 0,
-    averageRating: 0,
-    pendingQuotes: 0,
-    newNotifications: 0
+  const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats>({
+    totalRevenue: 0, todayRevenue: 0, yesterdayRevenue: 0, weekRevenue: 0, monthRevenue: 0,
+    totalOrders: 0, pendingOrders: 0, confirmedOrders: 0, processingOrders: 0,
+    shippedOrders: 0, completedOrders: 0, cancelledOrders: 0,
+    totalCustomers: 0, newCustomersToday: 0,
+    activeProducts: 0, lowStockProducts: 0, outOfStockProducts: 0,
+    averageOrderValue: 0, totalReviews: 0, averageRating: 0,
+    pendingQuotes: 0, newNotifications: 0, fulfillmentRate: 0
   });
-  const [recentOrders, setRecentOrders] = useState<any[]>([]);
-  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [recentOrders, setRecentOrders] = useState<RecentOrder[]>([]);
+  const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
+  const [recentCustomers, setRecentCustomers] = useState<RecentCustomer[]>([]);
   const [lowStockProducts, setLowStockProducts] = useState<any[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [dateRange, setDateRange] = useState<'today' | '7days' | '30days' | '3months' | '1year'>('30days');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadDashboardData();
-  }, []);
+  }, [dateRange]);
 
   const loadDashboardData = async () => {
     try {
+      // Calculate date ranges
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      
+      let startDate = monthAgo;
+      if (dateRange === 'today') startDate = today;
+      else if (dateRange === '7days') startDate = weekAgo;
+      else if (dateRange === '30days') startDate = monthAgo;
+      else if (dateRange === '3months') startDate = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+      else if (dateRange === '1year') startDate = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000);
+
       // Load orders
-      const { data: orders, error: ordersError } = await supabase
+      const { data: orders } = await supabase
         .from('orders')
         .select('*')
+        .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: false });
 
-      if (orders && !ordersError) {
-        const totalRevenue = orders.reduce((sum: number, o: Order) => sum + o.total, 0);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+      if (orders) {
+        const totalRevenue = orders.reduce((sum: number, o: any) => sum + o.total, 0);
+        const todayOrders = orders.filter((o: any) => new Date(o.created_at) >= today);
+        const yesterdayOrders = orders.filter((o: any) => 
+          new Date(o.created_at) >= yesterday && new Date(o.created_at) < today
+        );
+        const todayRevenue = todayOrders.reduce((sum: number, o: any) => sum + o.total, 0);
+        const yesterdayRevenue = yesterdayOrders.reduce((sum: number, o: any) => sum + o.total, 0);
 
-        const todayRevenue = orders
-          .filter((o: Order) => new Date(o.created_at) >= today)
-          .reduce((sum: number, o: Order) => sum + o.total, 0);
-
-        const weekRevenue = orders
-          .filter((o: Order) => new Date(o.created_at) >= weekAgo)
-          .reduce((sum: number, o: Order) => sum + o.total, 0);
-
-        const monthRevenue = orders
-          .filter((o: Order) => new Date(o.created_at) >= monthAgo)
-          .reduce((sum: number, o: Order) => sum + o.total, 0);
+        const completedOrders = orders.filter((o: any) => o.status === 'delivered').length;
+        const cancelledOrders = orders.filter((o: any) => o.status === 'cancelled').length;
+        const fulfillmentRate = orders.length > 0 
+          ? Math.round((completedOrders / (orders.length - cancelledOrders)) * 100) 
+          : 0;
 
         setStats(prev => ({
           ...prev,
           totalRevenue,
           todayRevenue,
-          weekRevenue,
-          monthRevenue,
+          yesterdayRevenue,
+          weekRevenue: orders.filter((o: any) => new Date(o.created_at) >= weekAgo).reduce((s: number, o: any) => s + o.total, 0),
+          monthRevenue: totalRevenue,
           totalOrders: orders.length,
-          pendingOrders: orders.filter((o: Order) => o.status === 'pending').length,
-          completedOrders: orders.filter((o: Order) => o.status === 'delivered').length,
-          cancelledOrders: orders.filter((o: Order) => o.status === 'cancelled').length,
-          averageOrderValue: orders.length > 0 ? totalRevenue / orders.length : 0
+          pendingOrders: orders.filter((o: any) => o.status === 'pending').length,
+          confirmedOrders: orders.filter((o: any) => o.status === 'confirmed').length,
+          processingOrders: orders.filter((o: any) => o.status === 'processing').length,
+          shippedOrders: orders.filter((o: any) => o.status === 'shipped').length,
+          completedOrders,
+          cancelledOrders,
+          averageOrderValue: orders.length > 0 ? totalRevenue / orders.length : 0,
+          fulfillmentRate
         }));
 
-        setRecentOrders(orders.slice(0, 5));
+        setRecentOrders(orders.slice(0, 5).map((o: any) => ({
+          id: o.id,
+          total: o.total,
+          status: o.status,
+          created_at: o.created_at,
+          customer: o.customer || { name: 'Unknown', email: '' },
+          items_count: o.items?.length || 0
+        })));
       }
 
       // Load products
-      const { data: products, error: productsError } = await supabase
+      const { data: products } = await supabase
         .from('products')
         .select('*')
         .is('deleted_at', null);
 
-      if (products && !productsError) {
-        const activeProducts = products.filter((p: Product) => p.is_active);
-        const lowStock = activeProducts.filter((p: Product) =>
-          p.stock_quantity !== undefined &&
-          p.stock_quantity <= (p.low_stock_threshold || 10)
+      if (products) {
+        const activeProducts = products.filter((p: any) => p.is_active);
+        const lowStock = activeProducts.filter((p: any) => 
+          p.stock_quantity !== undefined && 
+          p.stock_quantity <= (p.low_stock_threshold || 10) &&
+          p.stock_quantity > 0
+        );
+        const outOfStock = activeProducts.filter((p: any) => 
+          p.stock_quantity !== undefined && p.stock_quantity === 0
         );
 
         setStats(prev => ({
           ...prev,
           activeProducts: activeProducts.length,
-          lowStockProducts: lowStock.length
+          lowStockProducts: lowStock.length,
+          outOfStockProducts: outOfStock.length
         }));
 
-        setLowStockProducts(lowStock.slice(0, 5));
+        setLowStockProducts([...lowStock, ...outOfStock].slice(0, 5));
+
+        // Calculate top products by order data
+        const productSales: { [key: number]: { product: any; count: number; revenue: number } } = {};
+        orders?.forEach((order: any) => {
+          order.items?.forEach((item: any) => {
+            if (!productSales[item.product.id]) {
+              productSales[item.product.id] = { product: item.product, count: 0, revenue: 0 };
+            }
+            productSales[item.product.id].count += item.quantity;
+            productSales[item.product.id].revenue += item.product.price * item.quantity;
+          });
+        });
+
+        const topProductsList = Object.values(productSales)
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5)
+          .map(item => ({
+            id: item.product.id,
+            name: item.product.name,
+            image: item.product.image,
+            category: item.product.category,
+            sales_count: item.count,
+            revenue: item.revenue
+          }));
+
+        setTopProducts(topProductsList);
       }
 
-      // Load customers count
-      const { count } = await supabase
+      // Load customers
+      const { data: customers } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'user');
+        .select('*')
+        .eq('role', 'user')
+        .order('created_at', { ascending: false })
+        .limit(5);
 
-      if (count !== null) {
-        setStats(prev => ({ ...prev, totalCustomers: count }));
+      if (customers) {
+        const customersWithOrders = await Promise.all(
+          customers.map(async (c: any) => {
+            const { data: userOrders } = await supabase
+              .from('orders')
+              .select('total')
+              .eq('user_id', c.id);
+            
+            return {
+              id: c.id,
+              name: c.name,
+              email: c.email,
+              created_at: c.created_at,
+              orders_count: userOrders?.length || 0,
+              total_spent: userOrders?.reduce((sum: number, o: any) => sum + o.total, 0) || 0
+            };
+          })
+        );
+
+        setRecentCustomers(customersWithOrders);
+        setStats(prev => ({
+          ...prev,
+          totalCustomers: customers.length,
+          newCustomersToday: customers.filter((c: any) => new Date(c.created_at) >= today).length
+        }));
       }
 
       // Load reviews
-      const { data: reviews, error: reviewsError } = await supabase
-        .from('feedback')
-        .select('rating');
-
-      if (reviews && !reviewsError && reviews.length > 0) {
-        const avgRating = reviews.reduce((sum: number, r: Review) => sum + r.rating, 0) / reviews.length;
-        setStats(prev => ({
-          ...prev,
-          totalReviews: reviews.length,
-          averageRating: avgRating
-        }));
+      const { data: reviews } = await supabase.from('feedback').select('rating');
+      if (reviews && reviews.length > 0) {
+        const avgRating = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length;
+        setStats(prev => ({ ...prev, totalReviews: reviews.length, averageRating: avgRating }));
       }
 
       // Load pending quotes
@@ -176,182 +280,664 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
         setStats(prev => ({ ...prev, newNotifications }));
       }
 
+      // Generate alerts
+      const newAlerts: Alert[] = [];
+      if (stats.pendingOrders > 0) {
+        newAlerts.push({
+          type: 'warning',
+          title: 'Pending Orders',
+          message: `${stats.pendingOrders} orders awaiting confirmation`,
+          action: 'View Orders',
+          navigateTo: 'orders'
+        });
+      }
+      if (stats.lowStockProducts > 0) {
+        newAlerts.push({
+          type: 'error',
+          title: 'Low Stock Alert',
+          message: `${stats.lowStockProducts} products running low on stock`,
+          action: 'View Inventory',
+          navigateTo: 'products'
+        });
+      }
+      if (stats.pendingQuotes > 0) {
+        newAlerts.push({
+          type: 'info',
+          title: 'Quote Requests',
+          message: `${stats.pendingQuotes} quotes awaiting review`,
+          action: 'Review Quotes',
+          navigateTo: 'quotes'
+        });
+      }
+      setAlerts(newAlerts);
+
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadDashboardData();
+  };
+
+  const getRevenueTrend = () => {
+    if (stats.yesterdayRevenue === 0) return 0;
+    return ((stats.todayRevenue - stats.yesterdayRevenue) / stats.yesterdayRevenue) * 100;
+  };
+
+  const revenueTrend = getRevenueTrend();
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
+      <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/30 to-stone-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-stone-900 mx-auto"></div>
-          <p className="mt-4 text-stone-600">Loading dashboard...</p>
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-amber-200 border-t-amber-600 rounded-full animate-spin mx-auto"></div>
+            <Sparkles className="w-6 h-6 text-amber-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <p className="mt-4 text-stone-600 font-medium">Loading your dashboard...</p>
         </div>
       </div>
     );
   }
 
+  const currentHour = new Date().getHours();
+  const greeting = currentHour < 12 ? 'Good morning' : currentHour < 18 ? 'Good afternoon' : 'Good evening';
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-stone-900">Dashboard</h2>
-        <p className="text-stone-600 mt-1">Welcome to your admin dashboard</p>
-      </div>
-
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={<DollarSign className="w-6 h-6" />}
-          label="Total Revenue"
-          value={formatPrice(stats.totalRevenue)}
-          color="green"
-        />
-        <StatCard
-          icon={<ShoppingCart className="w-6 h-6" />}
-          label="Total Orders"
-          value={stats.totalOrders.toString()}
-          subtitle={`${stats.pendingOrders} pending`}
-          color="blue"
-        />
-        <StatCard
-          icon={<Users className="w-6 h-6" />}
-          label="Total Customers"
-          value={stats.totalCustomers.toString()}
-          color="purple"
-        />
-        <StatCard
-          icon={<Package className="w-6 h-6" />}
-          label="Active Products"
-          value={stats.activeProducts.toString()}
-          subtitle={`${stats.lowStockProducts} low stock`}
-          color="orange"
-        />
-      </div>
-
-      {/* Revenue Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-stone-600">Today's Revenue</p>
-              <p className="text-2xl font-bold text-stone-900">{formatPrice(stats.todayRevenue)}</p>
+    <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/20 to-stone-50">
+      <div className="max-w-[1600px] mx-auto p-6 lg:p-8 space-y-6">
+        
+        {/* Welcome Header */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-serif text-stone-900 font-bold">
+              {greeting}, {user?.name?.split(' ')[0] || 'Admin'} 👋
+            </h1>
+            <p className="text-stone-600 mt-1">
+              Here's what's happening with your store today.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            {/* Date Range Selector */}
+            <div className="flex items-center gap-2 bg-white rounded-lg shadow-sm border border-stone-200 p-1">
+              {[
+                { value: 'today', label: 'Today' },
+                { value: '7days', label: '7 Days' },
+                { value: '30days', label: '30 Days' },
+                { value: '3months', label: '3 Months' },
+                { value: '1year', label: '1 Year' }
+              ].map(range => (
+                <button
+                  key={range.value}
+                  onClick={() => setDateRange(range.value as any)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                    dateRange === range.value
+                      ? 'bg-stone-900 text-white shadow-sm'
+                      : 'text-stone-600 hover:bg-stone-100'
+                  }`}
+                >
+                  {range.label}
+                </button>
+              ))}
             </div>
-            <Calendar className="w-8 h-8 text-stone-400" />
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="p-2 bg-white rounded-lg shadow-sm border border-stone-200 hover:bg-stone-50 transition-colors disabled:opacity-50"
+              title="Refresh data"
+            >
+              <RefreshCw className={`w-4 h-4 text-stone-600 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-stone-600">This Week</p>
-              <p className="text-2xl font-bold text-stone-900">{formatPrice(stats.weekRevenue)}</p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-stone-400" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-stone-600">This Month</p>
-              <p className="text-2xl font-bold text-stone-900">{formatPrice(stats.monthRevenue)}</p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-stone-400" />
-          </div>
-        </div>
-      </div>
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-stone-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <QuickAction 
-            icon={<Package className="w-6 h-6" />} 
-            label="Add Product" 
-            color="blue" 
-            onClick={() => onNavigate?.('products')}
+        {/* Alerts Section */}
+        {alerts.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {alerts.map((alert, index) => (
+              <div
+                key={index}
+                className={`rounded-xl border-l-4 p-4 shadow-sm ${
+                  alert.type === 'warning' ? 'bg-amber-50 border-amber-500' :
+                  alert.type === 'error' ? 'bg-red-50 border-red-500' :
+                  alert.type === 'success' ? 'bg-green-50 border-green-500' :
+                  'bg-blue-50 border-blue-500'
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className={`font-semibold text-sm ${
+                      alert.type === 'warning' ? 'text-amber-900' :
+                      alert.type === 'error' ? 'text-red-900' :
+                      alert.type === 'success' ? 'text-green-900' :
+                      'text-blue-900'
+                    }`}>
+                      {alert.title}
+                    </h4>
+                    <p className={`text-xs mt-1 ${
+                      alert.type === 'warning' ? 'text-amber-700' :
+                      alert.type === 'error' ? 'text-red-700' :
+                      alert.type === 'success' ? 'text-green-700' :
+                      'text-blue-700'
+                    }`}>
+                      {alert.message}
+                    </p>
+                  </div>
+                  {alert.action && alert.navigateTo && (
+                    <button
+                      onClick={() => onNavigate?.(alert.navigateTo)}
+                      className="text-xs font-medium text-stone-900 hover:text-stone-700 flex items-center gap-1"
+                    >
+                      {alert.action}
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* KPI Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <KPICard
+            icon={<DollarSign className="w-5 h-5" />}
+            label="Total Revenue"
+            value={formatPrice(stats.totalRevenue)}
+            trend={revenueTrend}
+            color="emerald"
           />
-          <QuickAction 
-            icon={<Tag className="w-6 h-6" />} 
-            label="Create Coupon" 
-            color="green" 
-            onClick={() => onNavigate?.('coupons')}
+          <KPICard
+            icon={<ShoppingCart className="w-5 h-5" />}
+            label="Total Orders"
+            value={stats.totalOrders.toString()}
+            subtitle={`${stats.pendingOrders} pending`}
+            color="blue"
           />
-          <QuickAction 
-            icon={<MessageCircle className="w-6 h-6" />} 
-            label="Review Feedback" 
-            color="purple" 
-            onClick={() => onNavigate?.('reviews')}
+          <KPICard
+            icon={<Users className="w-5 h-5" />}
+            label="Customers"
+            value={stats.totalCustomers.toString()}
+            subtitle={`${stats.newCustomersToday} new today`}
+            color="purple"
           />
-          <QuickAction 
-            icon={<Settings className="w-6 h-6" />} 
-            label="Store Settings" 
-            color="orange" 
-            onClick={() => onNavigate?.('settings')}
+          <KPICard
+            icon={<Package className="w-5 h-5" />}
+            label="Products"
+            value={stats.activeProducts.toString()}
+            subtitle={`${stats.lowStockProducts} low stock`}
+            color="amber"
+          />
+          <KPICard
+            icon={<TrendingUp className="w-5 h-5" />}
+            label="Avg Order Value"
+            value={formatPrice(stats.averageOrderValue)}
+            color="rose"
+          />
+          <KPICard
+            icon={<CheckCircle2 className="w-5 h-5" />}
+            label="Fulfillment Rate"
+            value={`${stats.fulfillmentRate}%`}
+            color="teal"
           />
         </div>
+
+        {/* Revenue Overview & Order Status */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Revenue Chart */}
+          <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-lg font-semibold text-stone-900">Revenue Overview</h3>
+                <p className="text-sm text-stone-500 mt-1">
+                  {dateRange === 'today' ? "Today's" : 
+                   dateRange === '7days' ? 'Last 7 days' :
+                   dateRange === '30days' ? 'Last 30 days' :
+                   dateRange === '3months' ? 'Last 3 months' : 'Last year'} revenue breakdown
+                </p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-stone-900">
+                  {dateRange === 'today' ? formatPrice(stats.todayRevenue) :
+                   dateRange === '7days' ? formatPrice(stats.weekRevenue) :
+                   formatPrice(stats.monthRevenue)}
+                </p>
+                {revenueTrend !== 0 && (
+                  <p className={`text-sm font-medium flex items-center gap-1 justify-end ${
+                    revenueTrend > 0 ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {revenueTrend > 0 ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                    {Math.abs(revenueTrend).toFixed(1)}% vs yesterday
+                  </p>
+                )}
+              </div>
+            </div>
+            
+            {/* Simple Bar Chart */}
+            <div className="space-y-3">
+              {[
+                { label: 'Today', value: stats.todayRevenue, max: Math.max(stats.todayRevenue, stats.weekRevenue / 7, stats.monthRevenue / 30) },
+                { label: 'This Week', value: stats.weekRevenue, max: Math.max(stats.todayRevenue, stats.weekRevenue, stats.monthRevenue) },
+                { label: 'This Month', value: stats.monthRevenue, max: Math.max(stats.todayRevenue, stats.weekRevenue, stats.monthRevenue) }
+              ].map((item, idx) => (
+                <div key={idx}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-sm text-stone-600">{item.label}</span>
+                    <span className="text-sm font-semibold text-stone-900">{formatPrice(item.value)}</span>
+                  </div>
+                  <div className="h-2 bg-stone-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-amber-500 to-amber-600 rounded-full transition-all duration-500"
+                      style={{ width: `${item.max > 0 ? (item.value / item.max) * 100 : 0}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Order Status Donut */}
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200 p-6">
+            <h3 className="text-lg font-semibold text-stone-900 mb-6">Order Status</h3>
+            
+            {/* Visual Donut */}
+            <div className="relative w-48 h-48 mx-auto mb-6">
+              <svg className="w-full h-full transform -rotate-90">
+                {(() => {
+                  const total = stats.totalOrders || 1;
+                  const statuses = [
+                    { label: 'Pending', value: stats.pendingOrders, color: '#f59e0b' },
+                    { label: 'Confirmed', value: stats.confirmedOrders, color: '#3b82f6' },
+                    { label: 'Processing', value: stats.processingOrders, color: '#8b5cf6' },
+                    { label: 'Shipped', value: stats.shippedOrders, color: '#6366f1' },
+                    { label: 'Delivered', value: stats.completedOrders, color: '#10b981' },
+                    { label: 'Cancelled', value: stats.cancelledOrders, color: '#ef4444' }
+                  ];
+                  
+                  let currentOffset = 0;
+                  const circumference = 2 * Math.PI * 70;
+                  
+                  return statuses.map((status, idx) => {
+                    const percentage = status.value / total;
+                    const strokeDasharray = `${percentage * circumference} ${circumference}`;
+                    const strokeDashoffset = -currentOffset;
+                    currentOffset += percentage * circumference;
+                    
+                    return (
+                      <circle
+                        key={idx}
+                        cx="96"
+                        cy="96"
+                        r="70"
+                        fill="none"
+                        stroke={status.color}
+                        strokeWidth="20"
+                        strokeDasharray={strokeDasharray}
+                        strokeDashoffset={strokeDashoffset}
+                        className="transition-all duration-500"
+                      />
+                    );
+                  });
+                })()}
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center flex-col">
+                <p className="text-3xl font-bold text-stone-900">{stats.totalOrders}</p>
+                <p className="text-xs text-stone-500">Total Orders</p>
+              </div>
+            </div>
+
+            {/* Legend */}
+            <div className="space-y-2">
+              {[
+                { label: 'Pending', value: stats.pendingOrders, color: 'bg-amber-500' },
+                { label: 'Confirmed', value: stats.confirmedOrders, color: 'bg-blue-500' },
+                { label: 'Processing', value: stats.processingOrders, color: 'bg-purple-500' },
+                { label: 'Shipped', value: stats.shippedOrders, color: 'bg-indigo-500' },
+                { label: 'Delivered', value: stats.completedOrders, color: 'bg-green-500' },
+                { label: 'Cancelled', value: stats.cancelledOrders, color: 'bg-red-500' }
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <div className={`w-3 h-3 rounded-full ${item.color}`} />
+                    <span className="text-stone-600">{item.label}</span>
+                  </div>
+                  <span className="font-semibold text-stone-900">{item.value}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Orders & Top Products */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Orders */}
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200">
+            <div className="p-6 border-b border-stone-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-stone-900">Recent Orders</h3>
+                <p className="text-sm text-stone-500 mt-1">Latest customer orders</p>
+              </div>
+              <button 
+                onClick={() => onNavigate?.('orders')}
+                className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
+              >
+                View All <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6">
+              {recentOrders.length === 0 ? (
+                <EmptyState icon={<ShoppingCart />} message="No orders yet" />
+              ) : (
+                <div className="space-y-3">
+                  {recentOrders.map((order) => (
+                    <div key={order.id} className="flex items-center justify-between p-3 bg-stone-50 rounded-lg hover:bg-stone-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                          <ShoppingCart className="w-5 h-5 text-stone-600" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-stone-900 text-sm">#{order.id.slice(-8)}</p>
+                          <p className="text-xs text-stone-500">{order.customer.name}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-stone-900 text-sm">{formatPrice(order.total)}</p>
+                        <StatusBadge status={order.status} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Top Products */}
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200">
+            <div className="p-6 border-b border-stone-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-stone-900">Top Selling Products</h3>
+                <p className="text-sm text-stone-500 mt-1">Best performers this period</p>
+              </div>
+              <button 
+                onClick={() => onNavigate?.('products')}
+                className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
+              >
+                View All <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6">
+              {topProducts.length === 0 ? (
+                <EmptyState icon={<Package />} message="No sales data yet" />
+              ) : (
+                <div className="space-y-3">
+                  {topProducts.map((product, index) => (
+                    <div key={product.id} className="flex items-center gap-4 p-3 bg-stone-50 rounded-lg hover:bg-stone-100 transition-colors">
+                      <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-amber-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                        {index + 1}
+                      </div>
+                      <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-sm">
+                        {product.image.startsWith('') || product.image.startsWith('http') ? (
+                          <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-xl">{product.image}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-stone-900 text-sm truncate">{product.name}</p>
+                        <p className="text-xs text-stone-500">{product.sales_count} sold</p>
+                      </div>
+                      <p className="font-semibold text-stone-900 text-sm">{formatPrice(product.revenue)}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Recent Customers & Low Stock */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Recent Customers */}
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200">
+            <div className="p-6 border-b border-stone-200 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold text-stone-900">Recent Customers</h3>
+                <p className="text-sm text-stone-500 mt-1">Latest signups</p>
+              </div>
+              <button 
+                onClick={() => onNavigate?.('customers')}
+                className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
+              >
+                View All <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6">
+              {recentCustomers.length === 0 ? (
+                <EmptyState icon={<Users />} message="No customers yet" />
+              ) : (
+                <div className="space-y-3">
+                  {recentCustomers.map((customer) => (
+                    <div key={customer.id} className="flex items-center justify-between p-3 bg-stone-50 rounded-lg hover:bg-stone-100 transition-colors">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white font-bold">
+                          {customer.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-stone-900 text-sm">{customer.name}</p>
+                          <p className="text-xs text-stone-500">{customer.email}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-stone-900 text-sm">{formatPrice(customer.total_spent)}</p>
+                        <p className="text-xs text-stone-500">{customer.orders_count} orders</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Low Stock Alert */}
+          <div className="bg-white rounded-2xl shadow-sm border border-stone-200">
+            <div className="p-6 border-b border-stone-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-orange-600" />
+                <div>
+                  <h3 className="text-lg font-semibold text-stone-900">Low Stock Alert</h3>
+                  <p className="text-sm text-stone-500 mt-1">Products needing attention</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => onNavigate?.('products')}
+                className="text-sm text-amber-600 hover:text-amber-700 font-medium flex items-center gap-1"
+              >
+                View Inventory <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-6">
+              {lowStockProducts.length === 0 ? (
+                <EmptyState icon={<CheckCircle2 />} message="All products well stocked" type="success" />
+              ) : (
+                <div className="space-y-3">
+                  {lowStockProducts.map((product) => (
+                    <div key={product.id} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-100">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-sm">
+                          {product.image.startsWith('') || product.image.startsWith('http') ? (
+                            <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-xl">{product.image}</span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-stone-900 text-sm">{product.name}</p>
+                          <p className="text-xs text-stone-600">SKU: {product.sku || 'N/A'}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-lg font-bold ${
+                          product.stock_quantity === 0 ? 'text-red-600' : 'text-orange-600'
+                        }`}>
+                          {product.stock_quantity || 0}
+                        </p>
+                        <p className="text-xs text-stone-600">
+                          {product.stock_quantity === 0 ? 'Out of Stock' : 'Low Stock'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="bg-gradient-to-br from-stone-900 to-stone-800 rounded-2xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-lg font-semibold text-white">Quick Actions</h3>
+              <p className="text-sm text-stone-400 mt-1">Common tasks at your fingertips</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <QuickAction 
+              icon={<Package className="w-6 h-6" />} 
+              label="Add Product" 
+              onClick={() => onNavigate?.('products')}
+              color="blue"
+            />
+            <QuickAction 
+              icon={<Tag className="w-6 h-6" />} 
+              label="Create Coupon" 
+              onClick={() => onNavigate?.('coupons')}
+              color="green"
+            />
+            <QuickAction 
+              icon={<MessageCircle className="w-6 h-6" />} 
+              label="Review Feedback" 
+              onClick={() => onNavigate?.('reviews')}
+              color="purple"
+            />
+            <QuickAction 
+              icon={<Settings className="w-6 h-6" />} 
+              label="Store Settings" 
+              onClick={() => onNavigate?.('settings')}
+              color="amber"
+            />
+          </div>
+        </div>
+
       </div>
     </div>
   );
 }
 
-interface StatCardProps {
+// KPI Card Component
+interface KPICardProps {
   icon: React.ReactNode;
   label: string;
   value: string;
   subtitle?: string;
-  trend?: string;
-  color: 'green' | 'blue' | 'purple' | 'orange';
+  trend?: number;
+  color: 'emerald' | 'blue' | 'purple' | 'amber' | 'rose' | 'teal';
 }
 
-function StatCard({ icon, label, value, subtitle, trend, color }: StatCardProps) {
+function KPICard({ icon, label, value, subtitle, trend, color }: KPICardProps) {
   const colorClasses = {
-    green: 'bg-green-100 text-green-600',
-    blue: 'bg-blue-100 text-blue-600',
-    purple: 'bg-purple-100 text-purple-600',
-    orange: 'bg-orange-100 text-orange-600'
+    emerald: 'bg-emerald-50 text-emerald-600',
+    blue: 'bg-blue-50 text-blue-600',
+    purple: 'bg-purple-50 text-purple-600',
+    amber: 'bg-amber-50 text-amber-600',
+    rose: 'bg-rose-50 text-rose-600',
+    teal: 'bg-teal-50 text-teal-600'
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`p-3 rounded-lg ${colorClasses[color]}`}>
+    <div className="bg-white rounded-xl shadow-sm border border-stone-200 p-5 hover:shadow-md transition-shadow">
+      <div className="flex items-center justify-between mb-3">
+        <div className={`p-2.5 rounded-lg ${colorClasses[color]}`}>
           {icon}
         </div>
-        {trend && (
-          <span className="text-sm text-green-600 font-medium">{trend}</span>
+        {trend !== undefined && trend !== 0 && (
+          <div className={`flex items-center gap-1 text-xs font-medium ${
+            trend > 0 ? 'text-green-600' : 'text-red-600'
+          }`}>
+            {trend > 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+            {Math.abs(trend).toFixed(1)}%
+          </div>
         )}
       </div>
-      <h3 className="text-sm text-stone-600 mb-1">{label}</h3>
-      <p className="text-2xl font-bold text-stone-900">{value}</p>
-      {subtitle && <p className="text-sm text-stone-500 mt-1">{subtitle}</p>}
+      <h3 className="text-xs text-stone-500 font-medium uppercase tracking-wide">{label}</h3>
+      <p className="text-2xl font-bold text-stone-900 mt-1">{value}</p>
+      {subtitle && <p className="text-xs text-stone-500 mt-1">{subtitle}</p>}
     </div>
   );
 }
 
+// Status Badge Component
+function StatusBadge({ status }: { status: string }) {
+  const statusConfig: { [key: string]: { bg: string; text: string } } = {
+    pending: { bg: 'bg-amber-100', text: 'text-amber-700' },
+    confirmed: { bg: 'bg-blue-100', text: 'text-blue-700' },
+    processing: { bg: 'bg-purple-100', text: 'text-purple-700' },
+    shipped: { bg: 'bg-indigo-100', text: 'text-indigo-700' },
+    delivered: { bg: 'bg-green-100', text: 'text-green-700' },
+    cancelled: { bg: 'bg-red-100', text: 'text-red-700' }
+  };
+
+  const config = statusConfig[status] || { bg: 'bg-stone-100', text: 'text-stone-700' };
+
+  return (
+    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${config.bg} ${config.text}`}>
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </span>
+  );
+}
+
+// Empty State Component
+function EmptyState({ icon, message, type = 'default' }: { icon: React.ReactNode; message: string; type?: 'default' | 'success' }) {
+  return (
+    <div className="text-center py-8">
+      <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-3 ${
+        type === 'success' ? 'bg-green-100 text-green-600' : 'bg-stone-100 text-stone-400'
+      }`}>
+        {icon}
+      </div>
+      <p className={`text-sm ${type === 'success' ? 'text-green-600' : 'text-stone-500'}`}>{message}</p>
+    </div>
+  );
+}
+
+// Quick Action Component
 interface QuickActionProps {
   icon: React.ReactNode;
   label: string;
-  color: 'blue' | 'green' | 'purple' | 'orange';
   onClick?: () => void;
+  color: 'blue' | 'green' | 'purple' | 'amber';
 }
 
-function QuickAction({ icon, label, color, onClick }: QuickActionProps) {
+function QuickAction({ icon, label, onClick, color }: QuickActionProps) {
   const colorClasses = {
-    blue: 'bg-blue-50 text-blue-600 hover:bg-blue-100',
-    green: 'bg-green-50 text-green-600 hover:bg-green-100',
-    purple: 'bg-purple-50 text-purple-600 hover:bg-purple-100',
-    orange: 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+    blue: 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20',
+    green: 'bg-green-500/10 text-green-400 hover:bg-green-500/20',
+    purple: 'bg-purple-500/10 text-purple-400 hover:bg-purple-500/20',
+    amber: 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20'
   };
 
   return (
     <button 
       onClick={onClick}
-      className={`p-4 rounded-lg flex flex-col items-center gap-2 transition-colors ${colorClasses[color]}`}
+      className={`p-4 rounded-xl flex flex-col items-center gap-3 transition-all ${colorClasses[color]}`}
     >
       {icon}
-      <span className="text-sm font-medium">{label}</span>
+      <span className="text-sm font-medium text-white">{label}</span>
     </button>
   );
 }
