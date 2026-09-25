@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Package, ShoppingCart, Users, Star, MessageCircle, Tag, Truck, Bell, Settings, UserCog, FileText, ChevronRight, Menu, X, ArrowLeft, Heart } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Star, MessageCircle, Tag, Truck, Bell, Settings, UserCog, FileText, ChevronRight, Menu, X, ArrowLeft, Heart, Grid } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import ProductManagement from './ProductManagement';
 import OrderManagement from './OrderManagement';
@@ -13,8 +13,9 @@ import NotificationsPage from './NotificationsPage';
 import UsersPage from './UsersPage';
 import SettingsPage from './SettingsPage';
 import AdminWishlistFeedback from './AdminWishlistFeedback';
+import CategoriesPage from './CategoriesPage';
 
-export type AdminView = 'dashboard' | 'products' | 'orders' | 'customers' | 'reviews' | 'quotes' | 'coupons' | 'shipping' | 'reports' | 'notifications' | 'users' | 'settings' | 'wishlist-feedback';
+export type AdminView = 'dashboard' | 'products' | 'categories' | 'orders' | 'customers' | 'reviews' | 'quotes' | 'coupons' | 'shipping' | 'reports' | 'notifications' | 'users' | 'settings' | 'wishlist-feedback';
 
 interface AdminPanelProps {
   onBack?: () => void;
@@ -27,6 +28,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, submenu: false },
     { id: 'products', label: 'Products', icon: Package, submenu: false },
+    { id: 'categories', label: 'Categories', icon: Grid, submenu: false },
     { id: 'orders', label: 'Orders', icon: ShoppingCart, submenu: false },
     { id: 'customers', label: 'Customers', icon: Users, submenu: false },
     { id: 'reviews', label: 'Reviews & Feedback', icon: Star, submenu: false },
@@ -46,6 +48,8 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
         return <AdminDashboard onNavigate={setCurrentView} />;
       case 'products':
         return <ProductManagement />;
+      case 'categories':
+        return <CategoriesPage />;
       case 'orders':
         return <OrderManagement />;
       case 'customers':

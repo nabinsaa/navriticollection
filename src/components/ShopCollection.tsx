@@ -12,8 +12,17 @@ interface ShopCollectionProps {
   onGoToAdmin: () => void;
 }
 
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  image: string;
+  is_active: boolean;
+}
+
 export default function ShopCollection({ 
-  categories, 
+  categories: propsCategories, 
   onProductClick, 
   onAddToCart, 
   isAdmin,
@@ -21,6 +30,7 @@ export default function ShopCollection({
 }: ShopCollectionProps) {
   const { formatPrice } = useCurrency();
   const [products, setProducts] = useState<Product[]>([]);
+  const [dbCategories, setDbCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,7 +44,35 @@ export default function ShopCollection({
 
   useEffect(() => {
     loadProducts();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    if (isSupabaseConnected && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('is_active', true)
+          .order('display_order', { ascending: true });
+
+        if (error) {
+          console.error('Error loading categories:', error);
+          setDbCategories([]);
+        } else {
+          setDbCategories(data || []);
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        setDbCategories([]);
+      }
+    }
+  };
+
+  // Use database categories if available, otherwise fallback to props
+  const categories = dbCategories.length > 0 
+    ? ['All', ...dbCategories.map(c => c.name)]
+    : propsCategories;
 
   useEffect(() => {
     setCurrentPage(1); // Reset to page 1 when filters change

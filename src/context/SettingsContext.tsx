@@ -6,11 +6,24 @@ interface Settings {
   store_email: string;
   store_phone: string;
   store_address: string;
+  store_description: string;
+  store_logo: string;
+  store_banner: string;
   currency: string;
   shipping_fee: string;
   free_shipping_threshold: string;
+  minimum_order: string;
+  tax_rate: string;
   default_order_status: string;
   low_stock_threshold: string;
+  enable_reviews: string;
+  enable_wishlist: string;
+  enable_notifications: string;
+  store_facebook: string;
+  store_instagram: string;
+  store_twitter: string;
+  store_youtube: string;
+  store_whatsapp: string;
 }
 
 interface SettingsContextType {
@@ -24,11 +37,24 @@ const defaultSettings: Settings = {
   store_email: '',
   store_phone: '',
   store_address: '',
+  store_description: '',
+  store_logo: '',
+  store_banner: '',
   currency: 'NPR',
   shipping_fee: '99',
   free_shipping_threshold: '5000',
+  minimum_order: '0',
+  tax_rate: '0',
   default_order_status: 'pending',
   low_stock_threshold: '10',
+  enable_reviews: 'true',
+  enable_wishlist: 'true',
+  enable_notifications: 'true',
+  store_facebook: '',
+  store_instagram: '',
+  store_twitter: '',
+  store_youtube: '',
+  store_whatsapp: '',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -52,11 +78,24 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         store_email: settingsMap.store_email || '',
         store_phone: settingsMap.store_phone || '',
         store_address: settingsMap.store_address || '',
+        store_description: settingsMap.store_description || '',
+        store_logo: settingsMap.store_logo || '',
+        store_banner: settingsMap.store_banner || '',
         currency: settingsMap.currency || 'NPR',
         shipping_fee: settingsMap.shipping_fee || '99',
         free_shipping_threshold: settingsMap.free_shipping_threshold || '5000',
+        minimum_order: settingsMap.minimum_order || '0',
+        tax_rate: settingsMap.tax_rate || '0',
         default_order_status: settingsMap.default_order_status || 'pending',
         low_stock_threshold: settingsMap.low_stock_threshold || '10',
+        enable_reviews: settingsMap.enable_reviews || 'true',
+        enable_wishlist: settingsMap.enable_wishlist || 'true',
+        enable_notifications: settingsMap.enable_notifications || 'true',
+        store_facebook: settingsMap.store_facebook || '',
+        store_instagram: settingsMap.store_instagram || '',
+        store_twitter: settingsMap.store_twitter || '',
+        store_youtube: settingsMap.store_youtube || '',
+        store_whatsapp: settingsMap.store_whatsapp || '',
       });
     } catch (error) {
       console.error('Error loading settings:', error);
