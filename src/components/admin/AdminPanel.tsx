@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LayoutDashboard, Package, ShoppingCart, Users, Star, MessageCircle, Tag, Truck, Bell, Settings, UserCog, FileText, ChevronRight, Menu, X, ArrowLeft, Heart, Grid } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, Star, MessageCircle, Tag, Truck, Bell, Settings, UserCog, FileText, ChevronRight, Menu, X, ArrowLeft, Heart, Grid, Mail } from 'lucide-react';
 import AdminDashboard from './AdminDashboard';
 import ProductManagement from './ProductManagement';
 import OrderManagement from './OrderManagement';
@@ -14,8 +14,9 @@ import UsersPage from './UsersPage';
 import SettingsPage from './SettingsPage';
 import AdminWishlistFeedback from './AdminWishlistFeedback';
 import CategoriesPage from './CategoriesPage';
+import ContactMessagesPage from './ContactMessagesPage';
 
-export type AdminView = 'dashboard' | 'products' | 'categories' | 'orders' | 'customers' | 'reviews' | 'quotes' | 'coupons' | 'shipping' | 'reports' | 'notifications' | 'users' | 'settings' | 'wishlist-feedback';
+export type AdminView = 'dashboard' | 'products' | 'categories' | 'orders' | 'customers' | 'reviews' | 'quotes' | 'coupons' | 'shipping' | 'reports' | 'notifications' | 'users' | 'settings' | 'wishlist-feedback' | 'contact-messages';
 
 interface AdminPanelProps {
   onBack?: () => void;
@@ -33,6 +34,7 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
     { id: 'customers', label: 'Customers', icon: Users, submenu: false },
     { id: 'reviews', label: 'Reviews & Feedback', icon: Star, submenu: false },
     { id: 'wishlist-feedback', label: 'Wishlists & Product Feedback', icon: Heart, submenu: false },
+    { id: 'contact-messages', label: 'Contact Messages', icon: Mail, submenu: false },
     { id: 'quotes', label: 'Quote Requests', icon: MessageCircle, submenu: false },
     { id: 'coupons', label: 'Coupons', icon: Tag, submenu: false },
     { id: 'shipping', label: 'Shipping', icon: Truck, submenu: false },
@@ -58,6 +60,8 @@ export default function AdminPanel({ onBack }: AdminPanelProps) {
         return <ReviewsPage />;
       case 'wishlist-feedback':
         return <AdminWishlistFeedback onBack={() => setCurrentView('dashboard')} />;
+      case 'contact-messages':
+        return <ContactMessagesPage />;
       case 'quotes':
         return <QuoteRequestsPage />;
       case 'coupons':
