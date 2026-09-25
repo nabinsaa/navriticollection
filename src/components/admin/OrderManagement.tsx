@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, Filter, Eye, Truck, CheckCircle, XCircle, Package } from 'lucide-react';
+import { Search, Filter, Eye, Truck, CheckCircle, XCircle, Package, AlertCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCurrency } from '../../context/CurrencyContext';
 
@@ -26,6 +26,60 @@ interface Order {
   created_at: string;
 }
 
+// Status transition helper functions
+const ORDER_STATUS_FLOW = ['pending', 'confirmed', 'processing', 'shipped', 'delivered'];
+const TERMINAL_STATUSES = ['delivered', 'cancelled'];
+
+function getNextOrderStatus(currentStatus: string): string | null {
+  if (TERMINAL_STATUSES.includes(currentStatus)) {
+    return null;
+  }
+  
+  const currentIndex = ORDER_STATUS_FLOW.indexOf(currentStatus);
+  if (currentIndex === -1 || currentIndex >= ORDER_STATUS_FLOW.length - 1) {
+    return null;
+  }
+  
+  return ORDER_STATUS_FLOW[currentIndex + 1];
+}
+
+function canTransitionOrderStatus(currentStatus: string, nextStatus: string): boolean {
+  // Terminal states cannot be changed
+  if (TERMINAL_STATUSES.includes(currentStatus)) {
+    return false;
+  }
+  
+  // Can only move to next status in flow or cancel
+  const nextInFlow = getNextOrderStatus(currentStatus);
+  
+  if (nextStatus === 'cancelled') {
+    return true; // Can cancel from any non-terminal state
+  }
+  
+  return nextStatus === nextInFlow;
+}
+
+function getStatusLabel(status: string): string {
+  return status.charAt(0).toUpperCase() + status.slice(1);
+}
+
+function getNextActionButtonLabel(currentStatus: string): string {
+  const nextStatus = getNextOrderStatus(currentStatus);
+  
+  switch (nextStatus) {
+    case 'confirmed':
+      return 'Confirm Order';
+    case 'processing':
+      return 'Start Processing';
+    case 'shipped':
+      return 'Mark as Shipped';
+    case 'delivered':
+      return 'Mark as Delivered';
+    default:
+      return '';
+  }
+}
+
 export default function OrderManagement() {
   const { formatPrice } = useCurrency();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -35,6 +89,9 @@ export default function OrderManagement() {
   const [dateFilter, setDateFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
     loadOrders();
@@ -43,6 +100,14 @@ export default function OrderManagement() {
   useEffect(() => {
     filterOrders();
   }, [orders, searchTerm, statusFilter, dateFilter]);
+
+  // Auto-hide toast after 3 seconds
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
 
   const loadOrders = async () => {
     try {
@@ -94,6 +159,22 @@ export default function OrderManagement() {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    // Find the current order
+    const order = orders.find(o => o.id === orderId);
+    if (!order) {
+      setToast({ message: 'Order not found', type: 'error' });
+      return;
+    }
+
+    // Validate transition
+    if (!canTransitionOrderStatus(order.status, newStatus)) {
+      setToast({ message: 'Invalid order status transition', type: 'error' });
+      console.error(`Invalid transition: ${order.status} → ${newStatus}`);
+      return;
+    }
+
+    setUpdatingStatus(true);
+
     try {
       const { error } = await supabase
         .from('orders')
@@ -101,13 +182,32 @@ export default function OrderManagement() {
         .eq('id', orderId);
 
       if (error) throw error;
+
+      // Update local state
       await loadOrders();
+      
+      // Update selected order if it's the one being viewed
       if (selectedOrder?.id === orderId) {
         setSelectedOrder({ ...selectedOrder, status: newStatus });
       }
+
+      // Show success toast
+      setToast({ 
+        message: `Order #${orderId.slice(-8)} moved to ${getStatusLabel(newStatus)}`, 
+        type: 'success' 
+      });
+
+      // Close cancel confirmation if open
+      setShowCancelConfirm(false);
+
     } catch (error) {
       console.error('Error updating order:', error);
-      alert('Failed to update order status');
+      setToast({ 
+        message: 'Unable to update order status. Please try again.', 
+        type: 'error' 
+      });
+    } finally {
+      setUpdatingStatus(false);
     }
   };
 
@@ -242,6 +342,20 @@ export default function OrderManagement() {
         </div>
       )}
 
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[60] px-6 py-3 rounded-lg shadow-lg flex items-center gap-3 animate-slide-in ${
+          toast.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`}>
+          {toast.type === 'success' ? (
+            <CheckCircle className="w-5 h-5" />
+          ) : (
+            <AlertCircle className="w-5 h-5" />
+          )}
+          <span className="font-medium">{toast.message}</span>
+        </div>
+      )}
+
       {/* Order Details Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -255,7 +369,10 @@ export default function OrderManagement() {
                   </p>
                 </div>
                 <button
-                  onClick={() => setSelectedOrder(null)}
+                  onClick={() => {
+                    setSelectedOrder(null);
+                    setShowCancelConfirm(false);
+                  }}
                   className="text-stone-400 hover:text-stone-600"
                 >
                   <XCircle className="w-6 h-6" />
@@ -264,6 +381,156 @@ export default function OrderManagement() {
             </div>
 
             <div className="p-6 space-y-6">
+              {/* Status Progress Stepper */}
+              <div className="bg-stone-50 rounded-lg p-6">
+                <h4 className="text-sm font-medium text-stone-700 mb-4">Order Status</h4>
+                
+                {/* Terminal States */}
+                {selectedOrder.status === 'delivered' && (
+                  <div className="flex items-center gap-3 p-4 bg-green-100 rounded-lg">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                    <div>
+                      <p className="font-medium text-green-900">Order Completed</p>
+                      <p className="text-sm text-green-700">This order has been successfully delivered.</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedOrder.status === 'cancelled' && (
+                  <div className="flex items-center gap-3 p-4 bg-red-100 rounded-lg">
+                    <XCircle className="w-6 h-6 text-red-600" />
+                    <div>
+                      <p className="font-medium text-red-900">Order Cancelled</p>
+                      <p className="text-sm text-red-700">This order has been cancelled.</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Progress Stepper for Active Orders */}
+                {!TERMINAL_STATUSES.includes(selectedOrder.status) && (
+                  <div className="space-y-4">
+                    {/* Visual Progress */}
+                    <div className="flex items-center justify-between">
+                      {ORDER_STATUS_FLOW.map((status, index) => {
+                        const currentIndex = ORDER_STATUS_FLOW.indexOf(selectedOrder.status);
+                        const isCompleted = index < currentIndex;
+                        const isCurrent = index === currentIndex;
+                        
+                        return (
+                          <div key={status} className="flex items-center flex-1">
+                            <div className="flex flex-col items-center">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
+                                isCompleted 
+                                  ? 'bg-green-500 border-green-500 text-white' 
+                                  : isCurrent 
+                                  ? 'bg-blue-500 border-blue-500 text-white' 
+                                  : 'bg-white border-stone-300 text-stone-400'
+                              }`}>
+                                {isCompleted ? (
+                                  <CheckCircle className="w-5 h-5" />
+                                ) : (
+                                  <span className="text-sm font-medium">{index + 1}</span>
+                                )}
+                              </div>
+                              <span className={`text-xs mt-2 font-medium ${
+                                isCurrent ? 'text-blue-600' : isCompleted ? 'text-green-600' : 'text-stone-400'
+                              }`}>
+                                {getStatusLabel(status)}
+                              </span>
+                            </div>
+                            {index < ORDER_STATUS_FLOW.length - 1 && (
+                              <div className={`flex-1 h-0.5 mx-2 ${
+                                index < currentIndex ? 'bg-green-500' : 'bg-stone-300'
+                              }`} />
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Current Status Badge */}
+                    <div className="flex items-center justify-center">
+                      <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(selectedOrder.status)}`}>
+                        Current Status: {getStatusLabel(selectedOrder.status)}
+                      </span>
+                    </div>
+
+                    {/* Next Action Button */}
+                    {getNextOrderStatus(selectedOrder.status) && (
+                      <div className="flex justify-center pt-4">
+                        <button
+                          onClick={() => {
+                            const nextStatus = getNextOrderStatus(selectedOrder.status);
+                            if (nextStatus) {
+                              updateOrderStatus(selectedOrder.id, nextStatus);
+                            }
+                          }}
+                          disabled={updatingStatus}
+                          className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          {updatingStatus ? (
+                            <>
+                              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              Updating...
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle className="w-5 h-5" />
+                              {getNextActionButtonLabel(selectedOrder.status)}
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Cancel Order - Danger Zone */}
+                    <div className="pt-4 border-t border-stone-200">
+                      <h5 className="text-sm font-medium text-red-600 mb-3">Danger Zone</h5>
+                      {!showCancelConfirm ? (
+                        <button
+                          onClick={() => setShowCancelConfirm(true)}
+                          disabled={updatingStatus}
+                          className="px-4 py-2 bg-red-50 text-red-600 rounded-lg font-medium hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        >
+                          <XCircle className="w-4 h-4" />
+                          Cancel Order
+                        </button>
+                      ) : (
+                        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                          <p className="text-sm text-red-900 mb-3">
+                            <strong>Cancel this order?</strong><br />
+                            This action cannot be undone.
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => updateOrderStatus(selectedOrder.id, 'cancelled')}
+                              disabled={updatingStatus}
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                            >
+                              {updatingStatus ? (
+                                <>
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  Cancelling...
+                                </>
+                              ) : (
+                                'Confirm Cancellation'
+                              )}
+                            </button>
+                            <button
+                              onClick={() => setShowCancelConfirm(false)}
+                              disabled={updatingStatus}
+                              className="px-4 py-2 bg-white text-stone-700 rounded-lg font-medium hover:bg-stone-50 transition-colors border border-stone-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* Customer Info */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -336,27 +603,6 @@ export default function OrderManagement() {
                     <span className="text-stone-600">Payment Method</span>
                     <span className="text-stone-900">{selectedOrder.payment_method || 'COD'}</span>
                   </div>
-                </div>
-              </div>
-
-              {/* Status Update */}
-              <div>
-                <h4 className="text-sm font-medium text-stone-700 mb-2">Update Status</h4>
-                <div className="flex flex-wrap gap-2">
-                  {['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => updateOrderStatus(selectedOrder.id, status)}
-                      disabled={selectedOrder.status === status}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        selectedOrder.status === status
-                          ? 'bg-stone-900 text-white cursor-not-allowed'
-                          : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
-                      }`}
-                    >
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </button>
-                  ))}
                 </div>
               </div>
             </div>
