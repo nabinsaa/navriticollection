@@ -9,6 +9,7 @@ import ProductCard from './components/ProductCard';
 import Cart from './components/Cart';
 import Sidebar from './components/Sidebar';
 import LoginModal from './components/LoginModal';
+import AdminPanel from './components/admin/AdminPanel';
 import { supabase, isSupabaseConnected } from './lib/supabase';
 
 type View = 'shop' | 'orders' | 'wishlist' | 'quotes' | 'submit-quote' | 'feedback' | 'admin' | 'checkout' | 'product-detail';
@@ -187,16 +188,7 @@ function AppContent() {
         )}
 
         {currentView === 'admin' && (
-          <div className="text-center py-20">
-            <h2 className="text-3xl font-serif text-stone-900 mb-4">Admin Panel</h2>
-            <p className="text-stone-600">Admin dashboard will appear here</p>
-            <button
-              onClick={() => setCurrentView('shop')}
-              className="mt-6 px-6 py-3 bg-stone-900 text-white rounded-full font-medium hover:bg-stone-800 transition-colors"
-            >
-              Back to Shop
-            </button>
-          </div>
+          <AdminPanel onBack={() => setCurrentView('shop')} />
         )}
 
         {currentView === 'checkout' && (
