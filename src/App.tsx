@@ -75,6 +75,7 @@ function AppContent() {
         onCartClick={() => setCartOpen(true)}
         onLoginClick={() => setLoginModalOpen(true)}
         onNavigate={handleNavigate}
+        onLogout={() => setCurrentView('shop')}
       />
 
       <Sidebar
@@ -82,6 +83,7 @@ function AppContent() {
         onClose={() => setMenuOpen(false)}
         onNavigate={handleNavigate}
         onLoginClick={() => setLoginModalOpen(true)}
+        onLogout={() => setCurrentView('shop')}
       />
 
       <Cart
@@ -164,7 +166,8 @@ function AppContent() {
                     }}
                     onAddToCart={() => {
                       addToCart(product);
-                      setCartOpen(true);
+                      // Don't auto-open cart, just add to cart
+                      // User can manually open cart by clicking cart icon
                     }}
                   />
                 ))}

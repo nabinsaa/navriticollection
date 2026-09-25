@@ -8,12 +8,22 @@ interface SidebarProps {
   onClose: () => void;
   onNavigate: (view: string) => void;
   onLoginClick: () => void;
+  onLogout?: () => void;
 }
 
-export default function Sidebar({ isOpen, onClose, onNavigate, onLoginClick }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, onNavigate, onLoginClick, onLogout }: SidebarProps) {
   const { user, logout, isAdmin } = useAuth();
   const { orders } = useOrder();
   const { settings } = useSettings();
+
+  const handleLogout = async () => {
+    await logout();
+    onClose();
+    if (onLogout) {
+      onLogout();
+    }
+    onLoginClick();
+  };
 
   const menuItems = [
     { id: 'shop', label: 'Shop Collection', icon: Home },
@@ -97,11 +107,7 @@ export default function Sidebar({ isOpen, onClose, onNavigate, onLoginClick }: S
                 )}
               </div>
               <button
-                onClick={async () => {
-                  await logout();
-                  onClose();
-                  onLoginClick();
-                }}
+                onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-red-600 hover:bg-red-50 transition-colors"
               >
                 <LogOut className="w-5 h-5" />

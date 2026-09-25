@@ -9,15 +9,24 @@ interface HeaderProps {
   onCartClick: () => void;
   onLoginClick: () => void;
   onNavigate?: (view: string) => void;
+  onLogout?: () => void;
 }
 
-export default function Header({ onMenuClick, onCartClick, onLoginClick, onNavigate }: HeaderProps) {
+export default function Header({ onMenuClick, onCartClick, onLoginClick, onNavigate, onLogout }: HeaderProps) {
   const { currency, setCurrency } = useCurrency();
   const { user, logout, isAdmin } = useAuth();
   const { cart } = useOrder();
   const { settings } = useSettings();
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleLogout = async () => {
+    await logout();
+    if (onLogout) {
+      onLogout();
+    }
+    onLoginClick();
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-sm border-b border-stone-200">
@@ -75,10 +84,7 @@ export default function Header({ onMenuClick, onCartClick, onLoginClick, onNavig
                   {isAdmin && <span className="ml-1 text-amber-600">⭐</span>}
                 </span>
                 <button
-                  onClick={async () => {
-                    await logout();
-                    onLoginClick();
-                  }}
+                  onClick={handleLogout}
                   className="p-2 hover:bg-stone-100 rounded-lg transition-colors"
                   title="Logout"
                 >

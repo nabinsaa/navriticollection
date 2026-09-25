@@ -55,6 +55,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     }
 
     try {
+      // Always load user's own orders
       const { data: userOrders, error: userError } = await supabase
         .from('orders')
         .select('*')
@@ -62,13 +63,6 @@ export function OrderProvider({ children }: { children: ReactNode }) {
         .order('created_at', { ascending: false });
 
       if (userError) throw userError;
-
-      const { data: allOrdersData, error: allError } = await supabase
-        .from('orders')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (allError) throw allError;
 
       const convertOrder = (dbOrder: any): Order => ({
         id: dbOrder.id,
@@ -88,7 +82,19 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       });
 
       setOrders(userOrders?.map(convertOrder) || []);
-      setAllOrders(allOrdersData?.map(convertOrder) || []);
+
+      // Only load all orders if user is admin
+      if (user.role === 'admin') {
+        const { data: allOrdersData, error: allError } = await supabase
+          .from('orders')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (allError) throw allError;
+        setAllOrders(allOrdersData?.map(convertOrder) || []);
+      } else {
+        setAllOrders([]);
+      }
     } catch (error) {
       console.error('Error loading orders:', error);
     }
