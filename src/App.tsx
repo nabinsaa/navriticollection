@@ -18,9 +18,11 @@ import ShopCollection from './components/ShopCollection';
 import QuotesPage from './components/QuotesPage';
 import SubmitQuotePage from './components/SubmitQuotePage';
 import FeedbackPage from './components/FeedbackPage';
+import InfoPage from './components/InfoPage';
+import ContactPage from './components/ContactPage';
 import { supabase, isSupabaseConnected } from './lib/supabase';
 
-type View = 'shop' | 'orders' | 'wishlist' | 'quotes' | 'submit-quote' | 'feedback' | 'admin' | 'checkout' | 'product-detail';
+type View = 'shop' | 'orders' | 'wishlist' | 'quotes' | 'submit-quote' | 'feedback' | 'admin' | 'checkout' | 'product-detail' | 'about' | 'contact' | 'privacy' | 'terms' | 'shipping' | 'return';
 
 function AppContent() {
   const [currentView, setCurrentView] = useState<View>('shop');
@@ -125,6 +127,7 @@ function AppContent() {
             }}
             isAdmin={isAdmin}
             onGoToAdmin={() => setCurrentView('admin')}
+            onNavigate={(view) => setCurrentView(view as View)}
           />
         )}
 
@@ -175,6 +178,55 @@ function AppContent() {
 
         {currentView === 'feedback' && (
           <FeedbackPage />
+        )}
+
+        {currentView === 'about' && (
+          <InfoPage
+            title="About Us"
+            settingKey="about_page_content"
+            defaultContent="Welcome to our store. We are dedicated to bringing you the finest products with exceptional quality and service. Our mission is to provide you with an unforgettable shopping experience."
+            onBack={() => setCurrentView('shop')}
+          />
+        )}
+
+        {currentView === 'contact' && (
+          <ContactPage onBack={() => setCurrentView('shop')} />
+        )}
+
+        {currentView === 'privacy' && (
+          <InfoPage
+            title="Privacy Policy"
+            settingKey="privacy_policy_content"
+            defaultContent="Your privacy is important to us. This privacy policy explains how we collect, use, and protect your personal information when you use our services."
+            onBack={() => setCurrentView('shop')}
+          />
+        )}
+
+        {currentView === 'terms' && (
+          <InfoPage
+            title="Terms and Conditions"
+            settingKey="terms_content"
+            defaultContent="By using our website and services, you agree to comply with and be bound by the following terms and conditions. Please review them carefully."
+            onBack={() => setCurrentView('shop')}
+          />
+        )}
+
+        {currentView === 'shipping' && (
+          <InfoPage
+            title="Shipping Policy"
+            settingKey="shipping_policy_content"
+            defaultContent="We offer fast and reliable shipping services. Please review our shipping policy for details on delivery times, costs, and international shipping options."
+            onBack={() => setCurrentView('shop')}
+          />
+        )}
+
+        {currentView === 'return' && (
+          <InfoPage
+            title="Return Policy"
+            settingKey="return_policy_content"
+            defaultContent="We want you to be completely satisfied with your purchase. If you're not, please review our return policy for information on how to return items."
+            onBack={() => setCurrentView('shop')}
+          />
         )}
       </main>
     </div>

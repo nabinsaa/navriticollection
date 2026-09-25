@@ -13,6 +13,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -43,6 +44,11 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       return;
     }
 
+    if (!acceptTerms) {
+      setError('You must accept the Terms and Conditions to create an account');
+      return;
+    }
+
     setIsLoading(true);
     const success = await register(name, email, password);
     if (success) {
@@ -50,6 +56,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
       setName('');
       setEmail('');
       setPassword('');
+      setAcceptTerms(false);
     } else {
       setError('Failed to create account. Email may already be in use.');
     }
@@ -142,6 +149,29 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
                 placeholder="••••••••"
               />
             </div>
+
+            {mode === 'signup' && (
+              <div className="flex items-start gap-3 p-4 bg-stone-50 rounded-xl border border-stone-200">
+                <input
+                  type="checkbox"
+                  id="terms-checkbox"
+                  checked={acceptTerms}
+                  onChange={(e) => setAcceptTerms(e.target.checked)}
+                  className="mt-1 w-4 h-4 text-amber-600 border-stone-300 rounded focus:ring-amber-500"
+                  required
+                />
+                <label htmlFor="terms-checkbox" className="text-sm text-stone-700 leading-relaxed cursor-pointer">
+                  I have read and agree to the{' '}
+                  <span className="text-amber-600 font-medium hover:underline">
+                    Terms and Conditions
+                  </span>{' '}
+                  and{' '}
+                  <span className="text-amber-600 font-medium hover:underline">
+                    Privacy Policy
+                  </span>
+                </label>
+              </div>
+            )}
 
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-xl">

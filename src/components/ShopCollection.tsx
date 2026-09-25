@@ -11,6 +11,7 @@ interface ShopCollectionProps {
   onAddToCart: (product: Product) => void;
   isAdmin: boolean;
   onGoToAdmin: () => void;
+  onNavigate?: (view: string) => void;
 }
 
 interface Category {
@@ -27,7 +28,8 @@ export default function ShopCollection({
   onProductClick, 
   onAddToCart, 
   isAdmin,
-  onGoToAdmin 
+  onGoToAdmin,
+  onNavigate
 }: ShopCollectionProps) {
   const { formatPrice } = useCurrency();
   const { settings } = useSettings();
@@ -614,10 +616,10 @@ export default function ShopCollection({
             <div>
               <h4 className="text-white font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-sm">
-                <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-stone-400 hover:text-amber-400 transition-colors">Home</button></li>
-                <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-stone-400 hover:text-amber-400 transition-colors">Shop</button></li>
-                <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-stone-400 hover:text-amber-400 transition-colors">About</button></li>
-                <li><button onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="text-stone-400 hover:text-amber-400 transition-colors">Contact</button></li>
+                <li><button onClick={() => onNavigate?.('shop')} className="text-stone-400 hover:text-amber-400 transition-colors text-left">Home</button></li>
+                <li><button onClick={() => onNavigate?.('shop')} className="text-stone-400 hover:text-amber-400 transition-colors text-left">Shop</button></li>
+                <li><button onClick={() => onNavigate?.('about')} className="text-stone-400 hover:text-amber-400 transition-colors text-left">About</button></li>
+                <li><button onClick={() => onNavigate?.('contact')} className="text-stone-400 hover:text-amber-400 transition-colors text-left">Contact</button></li>
               </ul>
             </div>
 
@@ -626,19 +628,31 @@ export default function ShopCollection({
               <h4 className="text-white font-semibold mb-4">Customer Service</h4>
               <ul className="space-y-2 text-sm">
                 {settings.footer_links ? (
-                  settings.footer_links.split(',').map((link, index) => (
-                    <li key={index}>
-                      <button className="text-stone-400 hover:text-amber-400 transition-colors">
-                        {link.trim()}
-                      </button>
-                    </li>
-                  ))
+                  settings.footer_links.split(',').map((link, index) => {
+                    const linkName = link.trim();
+                    const linkMap: { [key: string]: string } = {
+                      'Privacy Policy': 'privacy',
+                      'Terms of Service': 'terms',
+                      'Shipping Policy': 'shipping',
+                      'Return Policy': 'return',
+                    };
+                    return (
+                      <li key={index}>
+                        <button 
+                          onClick={() => onNavigate?.(linkMap[linkName] || 'shop')}
+                          className="text-stone-400 hover:text-amber-400 transition-colors text-left"
+                        >
+                          {linkName}
+                        </button>
+                      </li>
+                    );
+                  })
                 ) : (
                   <>
-                    <li><button className="text-stone-400 hover:text-amber-400 transition-colors">Privacy Policy</button></li>
-                    <li><button className="text-stone-400 hover:text-amber-400 transition-colors">Terms of Service</button></li>
-                    <li><button className="text-stone-400 hover:text-amber-400 transition-colors">Shipping Policy</button></li>
-                    <li><button className="text-stone-400 hover:text-amber-400 transition-colors">Return Policy</button></li>
+                    <li><button onClick={() => onNavigate?.('privacy')} className="text-stone-400 hover:text-amber-400 transition-colors text-left">Privacy Policy</button></li>
+                    <li><button onClick={() => onNavigate?.('terms')} className="text-stone-400 hover:text-amber-400 transition-colors text-left">Terms of Service</button></li>
+                    <li><button onClick={() => onNavigate?.('shipping')} className="text-stone-400 hover:text-amber-400 transition-colors text-left">Shipping Policy</button></li>
+                    <li><button onClick={() => onNavigate?.('return')} className="text-stone-400 hover:text-amber-400 transition-colors text-left">Return Policy</button></li>
                   </>
                 )}
               </ul>

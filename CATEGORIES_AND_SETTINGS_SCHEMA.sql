@@ -86,7 +86,12 @@ insert into public.store_settings (setting_key, setting_value) values
   ('contact_hours', ''),
   ('footer_about', ''),
   ('footer_copyright', ''),
-  ('footer_links', '')
+  ('footer_links', ''),
+  ('about_page_content', 'Welcome to our store. We are dedicated to bringing you the finest products with exceptional quality and service. Our mission is to provide you with an unforgettable shopping experience.'),
+  ('privacy_policy_content', 'Your privacy is important to us. This privacy policy explains how we collect, use, and protect your personal information when you use our services.'),
+  ('terms_content', 'By using our website and services, you agree to comply with and be bound by the following terms and conditions. Please review them carefully.'),
+  ('shipping_policy_content', 'We offer fast and reliable shipping services. Please review our shipping policy for details on delivery times, costs, and international shipping options.'),
+  ('return_policy_content', 'We want you to be completely satisfied with your purchase. If you''re not, please review our return policy for information on how to return items.')
 on conflict (setting_key) do nothing;
 
 -- ============================================

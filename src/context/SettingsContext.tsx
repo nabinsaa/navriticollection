@@ -38,6 +38,11 @@ interface Settings {
   footer_about: string;
   footer_copyright: string;
   footer_links: string;
+  about_page_content: string;
+  privacy_policy_content: string;
+  terms_content: string;
+  shipping_policy_content: string;
+  return_policy_content: string;
 }
 
 interface SettingsContextType {
@@ -83,6 +88,11 @@ const defaultSettings: Settings = {
   footer_about: '',
   footer_copyright: '',
   footer_links: '',
+  about_page_content: '',
+  privacy_policy_content: '',
+  terms_content: '',
+  shipping_policy_content: '',
+  return_policy_content: '',
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -138,6 +148,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         footer_about: settingsMap.footer_about || '',
         footer_copyright: settingsMap.footer_copyright || '',
         footer_links: settingsMap.footer_links || '',
+        about_page_content: settingsMap.about_page_content || '',
+        privacy_policy_content: settingsMap.privacy_policy_content || '',
+        terms_content: settingsMap.terms_content || '',
+        shipping_policy_content: settingsMap.shipping_policy_content || '',
+        return_policy_content: settingsMap.return_policy_content || '',
       });
     } catch (error) {
       console.error('Error loading settings:', error);

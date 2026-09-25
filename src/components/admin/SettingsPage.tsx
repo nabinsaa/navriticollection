@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Save, Store, DollarSign, Truck, Bell, Image, Share2, ShoppingBag, Settings as SettingsIcon, Upload, X } from 'lucide-react';
+import { Save, Store, DollarSign, Truck, Bell, Image, Share2, ShoppingBag, Settings as SettingsIcon, Upload, X, FileText } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCurrency } from '../../context/CurrencyContext';
 import { useSettings } from '../../context/SettingsContext';
@@ -41,6 +41,11 @@ interface Settings {
   footer_about: string;
   footer_copyright: string;
   footer_links: string;
+  about_page_content: string;
+  privacy_policy_content: string;
+  terms_content: string;
+  shipping_policy_content: string;
+  return_policy_content: string;
 }
 
 export default function SettingsPage() {
@@ -83,10 +88,15 @@ export default function SettingsPage() {
     footer_about: '',
     footer_copyright: '',
     footer_links: '',
+    about_page_content: '',
+    privacy_policy_content: '',
+    terms_content: '',
+    shipping_policy_content: '',
+    return_policy_content: '',
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'images' | 'hero' | 'pricing' | 'orders' | 'features' | 'social' | 'contact' | 'footer'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'images' | 'hero' | 'pricing' | 'orders' | 'features' | 'social' | 'contact' | 'footer' | 'pages'>('general');
 
   useEffect(() => {
     loadSettings();
@@ -140,6 +150,11 @@ export default function SettingsPage() {
         footer_about: settingsMap.footer_about || '',
         footer_copyright: settingsMap.footer_copyright || '',
         footer_links: settingsMap.footer_links || '',
+        about_page_content: settingsMap.about_page_content || '',
+        privacy_policy_content: settingsMap.privacy_policy_content || '',
+        terms_content: settingsMap.terms_content || '',
+        shipping_policy_content: settingsMap.shipping_policy_content || '',
+        return_policy_content: settingsMap.return_policy_content || '',
       });
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -219,6 +234,7 @@ export default function SettingsPage() {
     { id: 'social', label: 'Social Media', icon: Share2 },
     { id: 'contact', label: 'Contact', icon: Bell },
     { id: 'footer', label: 'Footer', icon: Truck },
+    { id: 'pages', label: 'Pages', icon: FileText },
   ];
 
   return (
@@ -856,6 +872,73 @@ export default function SettingsPage() {
                       placeholder="Privacy Policy,Terms of Service,Shipping Policy,Return Policy"
                     />
                     <p className="text-xs text-stone-500 mt-1">Enter link names separated by commas</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Pages Tab */}
+          {activeTab === 'pages' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Page Content
+                </h3>
+                <p className="text-sm text-stone-600 mb-6">
+                  Customize the content for your store's informational pages. These pages are accessible from the footer.
+                </p>
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">About Page Content</label>
+                    <textarea
+                      value={settings.about_page_content}
+                      onChange={(e) => setSettings({ ...settings, about_page_content: e.target.value })}
+                      rows={6}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Tell your customers about your store, your story, your mission..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Privacy Policy Content</label>
+                    <textarea
+                      value={settings.privacy_policy_content}
+                      onChange={(e) => setSettings({ ...settings, privacy_policy_content: e.target.value })}
+                      rows={8}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Write your privacy policy here..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Terms and Conditions Content</label>
+                    <textarea
+                      value={settings.terms_content}
+                      onChange={(e) => setSettings({ ...settings, terms_content: e.target.value })}
+                      rows={8}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Write your terms and conditions here..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Shipping Policy Content</label>
+                    <textarea
+                      value={settings.shipping_policy_content}
+                      onChange={(e) => setSettings({ ...settings, shipping_policy_content: e.target.value })}
+                      rows={6}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Write your shipping policy here..."
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Return Policy Content</label>
+                    <textarea
+                      value={settings.return_policy_content}
+                      onChange={(e) => setSettings({ ...settings, return_policy_content: e.target.value })}
+                      rows={6}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Write your return policy here..."
+                    />
                   </div>
                 </div>
               </div>
