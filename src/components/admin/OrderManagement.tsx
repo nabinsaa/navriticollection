@@ -19,6 +19,8 @@ interface Order {
   currency: string;
   subtotal: number;
   shipping: number;
+  discount?: number;
+  coupon_code?: string;
   total: number;
   status: string;
   created_at: string;
@@ -237,6 +239,128 @@ export default function OrderManagement() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Order Details Modal */}
+      {selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-stone-200">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xl font-bold text-stone-900">Order #{selectedOrder.id.slice(-8)}</h3>
+                  <p className="text-sm text-stone-600 mt-1">
+                    {new Date(selectedOrder.created_at).toLocaleString()}
+                  </p>
+                </div>
+                <button
+                  onClick={() => setSelectedOrder(null)}
+                  className="text-stone-400 hover:text-stone-600"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Customer Info */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <h4 className="text-sm font-medium text-stone-700 mb-2">Customer Information</h4>
+                  <div className="bg-stone-50 rounded-lg p-4 space-y-2">
+                    <p className="text-sm"><span className="font-medium">Name:</span> {selectedOrder.customer.name}</p>
+                    <p className="text-sm"><span className="font-medium">Email:</span> {selectedOrder.customer.email}</p>
+                    <p className="text-sm"><span className="font-medium">Phone:</span> {selectedOrder.customer.phone || 'N/A'}</p>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-stone-700 mb-2">Shipping Address</h4>
+                  <div className="bg-stone-50 rounded-lg p-4">
+                    <p className="text-sm">{selectedOrder.customer.address || 'N/A'}</p>
+                    <p className="text-sm">{selectedOrder.customer.city || ''}, {selectedOrder.customer.zip || ''}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Order Items */}
+              <div>
+                <h4 className="text-sm font-medium text-stone-700 mb-2">Order Items</h4>
+                <div className="bg-stone-50 rounded-lg p-4 space-y-3">
+                  {selectedOrder.items.map((item, index) => (
+                    <div key={index} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-stone-100 rounded-lg flex items-center justify-center overflow-hidden">
+                          {item.product.image.startsWith('') || item.product.image.startsWith('http') ? (
+                            <img src={item.product.image} alt={item.product.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-2xl">{item.product.image}</span>
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-stone-900">{item.product.name}</p>
+                          <p className="text-xs text-stone-600">Qty: {item.quantity}</p>
+                        </div>
+                      </div>
+                      <p className="text-sm font-medium text-stone-900">
+                        {formatPrice(item.product.price * item.quantity)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Order Summary */}
+              <div>
+                <h4 className="text-sm font-medium text-stone-700 mb-2">Order Summary</h4>
+                <div className="bg-stone-50 rounded-lg p-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-600">Subtotal</span>
+                    <span className="text-stone-900">{formatPrice(selectedOrder.subtotal || selectedOrder.total)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-stone-600">Shipping</span>
+                    <span className="text-stone-900">{formatPrice(selectedOrder.shipping || 0)}</span>
+                  </div>
+                  {selectedOrder.discount && selectedOrder.discount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-stone-600">Discount</span>
+                      <span className="text-green-600">-{formatPrice(selectedOrder.discount)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm font-medium border-t border-stone-300 pt-2">
+                    <span className="text-stone-900">Total</span>
+                    <span className="text-stone-900">{formatPrice(selectedOrder.total)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm pt-2">
+                    <span className="text-stone-600">Payment Method</span>
+                    <span className="text-stone-900">{selectedOrder.payment_method || 'COD'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Update */}
+              <div>
+                <h4 className="text-sm font-medium text-stone-700 mb-2">Update Status</h4>
+                <div className="flex flex-wrap gap-2">
+                  {['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'].map((status) => (
+                    <button
+                      key={status}
+                      onClick={() => updateOrderStatus(selectedOrder.id, status)}
+                      disabled={selectedOrder.status === status}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        selectedOrder.status === status
+                          ? 'bg-stone-900 text-white cursor-not-allowed'
+                          : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                      }`}
+                    >
+                      {status.charAt(0).toUpperCase() + status.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
