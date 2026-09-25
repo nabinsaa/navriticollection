@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, ArrowLeft } from 'lucide-react';
+import { Package, ArrowLeft, RefreshCw } from 'lucide-react';
 import { useOrder } from '../context/OrderContext';
 import { useAuth } from '../context/AuthContext';
 import { useCurrency } from '../context/CurrencyContext';
@@ -8,13 +8,20 @@ import { supabase } from '../lib/supabase';
 interface OrdersPageProps {
   onBack: () => void;
   onLoginClick: () => void;
+  onReorder?: (items: any[]) => void;
 }
 
-export default function OrdersPage({ onBack, onLoginClick }: OrdersPageProps) {
+export default function OrdersPage({ onBack, onLoginClick, onReorder }: OrdersPageProps) {
   const { orders } = useOrder();
   const { user, isAuthenticated } = useAuth();
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
+
+  const handleReorder = (orderItems: any[]) => {
+    if (onReorder) {
+      onReorder(orderItems);
+    }
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -142,9 +149,20 @@ export default function OrdersPage({ onBack, onLoginClick }: OrdersPageProps) {
                       {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Credit Card'}
                     </p>
                   </div>
-                  <p className="text-lg font-bold text-stone-900">
-                    {formatPrice(order.total)}
-                  </p>
+                  <div className="flex items-center gap-3">
+                    <p className="text-lg font-bold text-stone-900">
+                      {formatPrice(order.total)}
+                    </p>
+                    {order.status === 'delivered' && onReorder && (
+                      <button
+                        onClick={() => handleReorder(order.items)}
+                        className="flex items-center gap-2 px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 transition-colors"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                        Reorder
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

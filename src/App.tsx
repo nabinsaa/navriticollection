@@ -3,6 +3,7 @@ import { CurrencyProvider } from './context/CurrencyContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { OrderProvider, useOrder } from './context/OrderContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { WishlistProvider } from './context/WishlistContext';
 import { categories, Product } from './data/products';
 import Header from './components/Header';
 import ProductCard from './components/ProductCard';
@@ -135,6 +136,22 @@ function AppContent() {
           <OrdersPage 
             onBack={() => setCurrentView('shop')} 
             onLoginClick={() => setLoginModalOpen(true)}
+            onReorder={(items) => {
+              // Add all items from the order to cart
+              items.forEach((item: any) => {
+                for (let i = 0; i < item.quantity; i++) {
+                  addToCart(item.product);
+                }
+              });
+              // Show success message
+              const toast = document.createElement('div');
+              toast.className = 'fixed top-20 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-slide-in';
+              toast.textContent = '✓ Items added to cart!';
+              document.body.appendChild(toast);
+              setTimeout(() => toast.remove(), 2000);
+              // Navigate to shop
+              setCurrentView('shop');
+            }}
           />
         )}
 
@@ -239,7 +256,9 @@ export default function App() {
       <CurrencyProvider>
         <AuthProvider>
           <OrderProvider>
-            <AppContent />
+            <WishlistProvider>
+              <AppContent />
+            </WishlistProvider>
           </OrderProvider>
         </AuthProvider>
       </CurrencyProvider>

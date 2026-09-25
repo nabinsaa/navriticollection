@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit, Trash2, Search, Filter, Package, AlertTriangle, X, Upload } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCurrency } from '../../context/CurrencyContext';
+import { notifyNewProduct } from '../../utils/notifications';
 
 interface Product {
   id: number;
@@ -432,11 +433,18 @@ function ProductModal({ product, onClose, onSave }: ProductModalProps) {
         if (error) throw error;
       } else {
         // Add new product
-        const { error } = await supabase
+        const { data, error } = await supabase
           .from('products')
-          .insert([formData]);
+          .insert([formData])
+          .select()
+          .single();
 
         if (error) throw error;
+
+        // Send notification to all users about new product
+        if (data) {
+          await notifyNewProduct(data.id, data.name, data.image);
+        }
       }
 
       onSave();
