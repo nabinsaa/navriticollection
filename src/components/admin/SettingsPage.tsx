@@ -12,6 +12,11 @@ interface Settings {
   store_description: string;
   store_logo: string;
   store_banner: string;
+  hero_title: string;
+  hero_subtitle: string;
+  hero_badge: string;
+  hero_features: string;
+  hero_background_image: string;
   currency: string;
   shipping_fee: string;
   free_shipping_threshold: string;
@@ -40,6 +45,11 @@ export default function SettingsPage() {
     store_description: '',
     store_logo: '',
     store_banner: '',
+    hero_title: '',
+    hero_subtitle: '',
+    hero_badge: '',
+    hero_features: '',
+    hero_background_image: '',
     currency: 'NPR',
     shipping_fee: '99',
     free_shipping_threshold: '5000',
@@ -58,7 +68,7 @@ export default function SettingsPage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'images' | 'pricing' | 'orders' | 'features' | 'social'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'images' | 'hero' | 'pricing' | 'orders' | 'features' | 'social'>('general');
 
   useEffect(() => {
     loadSettings();
@@ -83,6 +93,11 @@ export default function SettingsPage() {
         store_description: settingsMap.store_description || '',
         store_logo: settingsMap.store_logo || '',
         store_banner: settingsMap.store_banner || '',
+        hero_title: settingsMap.hero_title || 'Vastra Elegance',
+        hero_subtitle: settingsMap.hero_subtitle || 'Discover exquisite traditional clothing crafted with passion and heritage. Each piece tells a story of artisanal craftsmanship, timeless elegance, and cultural richness.',
+        hero_badge: settingsMap.hero_badge || '✨ Premium Collection',
+        hero_features: settingsMap.hero_features || 'Premium Quality,Free Shipping Over ₹5000',
+        hero_background_image: settingsMap.hero_background_image || '',
         currency: settingsMap.currency || 'NPR',
         shipping_fee: settingsMap.shipping_fee || '99',
         free_shipping_threshold: settingsMap.free_shipping_threshold || '5000',
@@ -139,7 +154,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleImageUpload = (field: 'store_logo' | 'store_banner', e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = (field: 'store_logo' | 'store_banner' | 'hero_background_image', e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
@@ -170,6 +185,7 @@ export default function SettingsPage() {
   const tabs = [
     { id: 'general', label: 'General', icon: Store },
     { id: 'images', label: 'Images', icon: Image },
+    { id: 'hero', label: 'Hero Banner', icon: Image },
     { id: 'pricing', label: 'Pricing', icon: DollarSign },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'features', label: 'Features', icon: SettingsIcon },
@@ -357,6 +373,96 @@ export default function SettingsPage() {
                       </label>
                     )}
                     <p className="text-xs text-stone-500 mt-2">Recommended: 1920x400px or larger, landscape orientation</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Hero Banner Tab */}
+          {activeTab === 'hero' && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-lg font-semibold text-stone-900 mb-4 flex items-center gap-2">
+                  <Image className="w-5 h-5" />
+                  Hero Banner Customization
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Hero Title</label>
+                    <input
+                      type="text"
+                      value={settings.hero_title}
+                      onChange={(e) => setSettings({ ...settings, hero_title: e.target.value })}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Your store name or main heading"
+                    />
+                    <p className="text-xs text-stone-500 mt-1">This appears as the main heading on the hero banner</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Hero Subtitle</label>
+                    <textarea
+                      value={settings.hero_subtitle}
+                      onChange={(e) => setSettings({ ...settings, hero_subtitle: e.target.value })}
+                      rows={3}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Brief description that appears below the title"
+                    />
+                    <p className="text-xs text-stone-500 mt-1">This appears as the description text on the hero banner</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Hero Badge</label>
+                    <input
+                      type="text"
+                      value={settings.hero_badge}
+                      onChange={(e) => setSettings({ ...settings, hero_badge: e.target.value })}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="✨ Premium Collection"
+                    />
+                    <p className="text-xs text-stone-500 mt-1">Small badge that appears above the title (e.g., "✨ Premium Collection")</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Hero Features (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={settings.hero_features}
+                      onChange={(e) => setSettings({ ...settings, hero_features: e.target.value })}
+                      className="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-900"
+                      placeholder="Premium Quality,Free Shipping Over ₹5000"
+                    />
+                    <p className="text-xs text-stone-500 mt-1">Feature badges that appear below the subtitle (separate with commas)</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-stone-700 mb-2">Hero Background Image</label>
+                    {settings.hero_background_image ? (
+                      <div className="relative w-full h-64">
+                        <img
+                          src={settings.hero_background_image}
+                          alt="Hero Background"
+                          className="w-full h-full object-cover rounded-lg border-2 border-stone-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSettings({ ...settings, hero_background_image: '' })}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1.5 hover:bg-red-600 shadow-lg"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-stone-300 rounded-lg cursor-pointer hover:border-stone-400 hover:bg-stone-50 transition-all">
+                        <Upload className="w-12 h-12 text-stone-400" />
+                        <span className="text-sm text-stone-600 mt-2 font-medium">Upload Hero Background</span>
+                        <span className="text-xs text-stone-500 mt-1">PNG, JPG up to 5MB</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => handleImageUpload('hero_background_image', e)}
+                          className="hidden"
+                        />
+                      </label>
+                    )}
+                    <p className="text-xs text-stone-500 mt-2">Recommended: 1920x1080px or larger, high-quality image</p>
                   </div>
                 </div>
               </div>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Search, Filter, Grid, List, ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 import { Product } from '../data/products';
 import { useCurrency } from '../context/CurrencyContext';
+import { useSettings } from '../context/SettingsContext';
 import { supabase, isSupabaseConnected } from '../lib/supabase';
 
 interface ShopCollectionProps {
@@ -29,6 +30,7 @@ export default function ShopCollection({
   onGoToAdmin 
 }: ShopCollectionProps) {
   const { formatPrice } = useCurrency();
+  const { settings } = useSettings();
   const [products, setProducts] = useState<Product[]>([]);
   const [dbCategories, setDbCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,7 +178,9 @@ export default function ShopCollection({
       <section 
         className="relative text-white py-20 md:py-32 overflow-hidden bg-cover bg-center bg-no-repeat"
         style={{
-          backgroundImage: 'url(https://image.qwenlm.ai/generated-images/dc09a620-6ae1-4417-8c81-fc34f5deae92/_result.png)'
+          backgroundImage: settings.hero_background_image 
+            ? `url(${settings.hero_background_image})`
+            : 'url(https://image.qwenlm.ai/generated-images/dc09a620-6ae1-4417-8c81-fc34f5deae92/_result.png)'
         }}
       >
         {/* Dark Overlay for better text readability */}
@@ -187,28 +191,29 @@ export default function ShopCollection({
         <div className="absolute bottom-0 right-0 w-96 h-96 bg-rose-500/20 rounded-full -mr-48 -mb-48 blur-3xl"></div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-block mb-4">
-            <span className="px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium text-amber-200 border border-amber-400/30">
-              ✨ Premium Collection
-            </span>
-          </div>
+          {settings.hero_badge && (
+            <div className="inline-block mb-4">
+              <span className="px-4 py-1.5 bg-white/10 backdrop-blur-sm rounded-full text-sm font-medium text-amber-200 border border-amber-400/30">
+                {settings.hero_badge}
+              </span>
+            </div>
+          )}
           <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif mb-6 tracking-tight drop-shadow-lg">
-            Vastra Elegance
+            {settings.hero_title || 'Vastra Elegance'}
           </h1>
           <p className="text-lg md:text-xl text-stone-200 max-w-3xl mx-auto leading-relaxed mb-8 drop-shadow-md">
-            Discover exquisite traditional clothing crafted with passion and heritage. 
-            Each piece tells a story of artisanal craftsmanship, timeless elegance, and cultural richness.
+            {settings.hero_subtitle || 'Discover exquisite traditional clothing crafted with passion and heritage. Each piece tells a story of artisanal craftsmanship, timeless elegance, and cultural richness.'}
           </p>
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-stone-300">
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
-              <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-              <span>Premium Quality</span>
+          {settings.hero_features && (
+            <div className="flex flex-wrap justify-center gap-6 text-sm text-stone-300">
+              {settings.hero_features.split(',').map((feature, index) => (
+                <div key={index} className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
+                  <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
+                  <span>{feature.trim()}</span>
+                </div>
+              ))}
             </div>
-            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
-              <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-              <span>Free Shipping Over ₹5000</span>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 

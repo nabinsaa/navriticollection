@@ -15,6 +15,9 @@ import WishlistPage from './components/WishlistPage';
 import CheckoutPage from './components/CheckoutPage';
 import AdminPanel from './components/admin/AdminPanel';
 import ShopCollection from './components/ShopCollection';
+import QuotesPage from './components/QuotesPage';
+import SubmitQuotePage from './components/SubmitQuotePage';
+import FeedbackPage from './components/FeedbackPage';
 import { supabase, isSupabaseConnected } from './lib/supabase';
 
 type View = 'shop' | 'orders' | 'wishlist' | 'quotes' | 'submit-quote' | 'feedback' | 'admin' | 'checkout' | 'product-detail';
@@ -160,6 +163,18 @@ function AppContent() {
             product={selectedProduct}
             onBack={() => setCurrentView('shop')}
           />
+        )}
+
+        {currentView === 'quotes' && (
+          <QuotesPage />
+        )}
+
+        {currentView === 'submit-quote' && (
+          <SubmitQuotePage onBack={() => setCurrentView('shop')} />
+        )}
+
+        {currentView === 'feedback' && (
+          <FeedbackPage />
         )}
       </main>
     </div>

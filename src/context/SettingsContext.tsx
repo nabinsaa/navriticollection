@@ -9,6 +9,11 @@ interface Settings {
   store_description: string;
   store_logo: string;
   store_banner: string;
+  hero_title: string;
+  hero_subtitle: string;
+  hero_badge: string;
+  hero_features: string;
+  hero_background_image: string;
   currency: string;
   shipping_fee: string;
   free_shipping_threshold: string;
@@ -40,6 +45,11 @@ const defaultSettings: Settings = {
   store_description: '',
   store_logo: '',
   store_banner: '',
+  hero_title: 'Vastra Elegance',
+  hero_subtitle: 'Discover exquisite traditional clothing crafted with passion and heritage. Each piece tells a story of artisanal craftsmanship, timeless elegance, and cultural richness.',
+  hero_badge: '✨ Premium Collection',
+  hero_features: 'Premium Quality,Free Shipping Over ₹5000',
+  hero_background_image: '',
   currency: 'NPR',
   shipping_fee: '99',
   free_shipping_threshold: '5000',
@@ -81,6 +91,11 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         store_description: settingsMap.store_description || '',
         store_logo: settingsMap.store_logo || '',
         store_banner: settingsMap.store_banner || '',
+        hero_title: settingsMap.hero_title || 'Vastra Elegance',
+        hero_subtitle: settingsMap.hero_subtitle || 'Discover exquisite traditional clothing crafted with passion and heritage. Each piece tells a story of artisanal craftsmanship, timeless elegance, and cultural richness.',
+        hero_badge: settingsMap.hero_badge || '✨ Premium Collection',
+        hero_features: settingsMap.hero_features || 'Premium Quality,Free Shipping Over ₹5000',
+        hero_background_image: settingsMap.hero_background_image || '',
         currency: settingsMap.currency || 'NPR',
         shipping_fee: settingsMap.shipping_fee || '99',
         free_shipping_threshold: settingsMap.free_shipping_threshold || '5000',
