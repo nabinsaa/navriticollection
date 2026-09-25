@@ -135,10 +135,18 @@ export default function ShopCollection({
   return (
     <div className="min-h-screen bg-gradient-to-br from-stone-50 via-amber-50/20 to-stone-50">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-stone-900 via-stone-800 to-stone-900 text-white py-16 md:py-24 overflow-hidden">
+      <section 
+        className="relative text-white py-20 md:py-32 overflow-hidden bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: 'url(https://image.qwenlm.ai/generated-images/dc09a620-6ae1-4417-8c81-fc34f5deae92/_result.png)'
+        }}
+      >
+        {/* Dark Overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/60 to-black/70"></div>
+        
         {/* Decorative Elements */}
-        <div className="absolute top-0 left-0 w-96 h-96 bg-amber-500/10 rounded-full -ml-48 -mt-48 blur-3xl"></div>
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-rose-500/10 rounded-full -mr-48 -mb-48 blur-3xl"></div>
+        <div className="absolute top-0 left-0 w-96 h-96 bg-amber-500/20 rounded-full -ml-48 -mt-48 blur-3xl"></div>
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-rose-500/20 rounded-full -mr-48 -mb-48 blur-3xl"></div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-block mb-4">
@@ -146,23 +154,19 @@ export default function ShopCollection({
               ✨ Premium Collection
             </span>
           </div>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif mb-6 tracking-tight">
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif mb-6 tracking-tight drop-shadow-lg">
             Vastra Elegance
           </h1>
-          <p className="text-lg md:text-xl text-stone-300 max-w-3xl mx-auto leading-relaxed mb-8">
+          <p className="text-lg md:text-xl text-stone-200 max-w-3xl mx-auto leading-relaxed mb-8 drop-shadow-md">
             Discover exquisite traditional clothing crafted with passion and heritage. 
             Each piece tells a story of artisanal craftsmanship, timeless elegance, and cultural richness.
           </p>
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-stone-400">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
-              <span>Handcrafted with Love</span>
-            </div>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-stone-300">
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
               <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
               <span>Premium Quality</span>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-4 py-2 rounded-full border border-white/20">
               <span className="w-2 h-2 bg-amber-400 rounded-full"></span>
               <span>Free Shipping Over ₹5000</span>
             </div>
