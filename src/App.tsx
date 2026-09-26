@@ -21,6 +21,7 @@ import SubmitQuotePage from './components/SubmitQuotePage';
 import FeedbackPage from './components/FeedbackPage';
 import InfoPage from './components/InfoPage';
 import ContactPage from './components/ContactPage';
+import ResetPasswordPage from './components/ResetPasswordPage';
 import { supabase, isSupabaseConnected } from './lib/supabase';
 
 type View = 'shop' | 'orders' | 'wishlist' | 'quotes' | 'submit-quote' | 'feedback' | 'admin' | 'checkout' | 'product-detail' | 'about' | 'contact' | 'privacy' | 'terms' | 'shipping' | 'return';
@@ -251,6 +252,18 @@ function AppContent() {
 }
 
 export default function App() {
+  if (window.location.pathname === '/reset-password') {
+    return (
+      <SettingsProvider>
+        <CurrencyProvider>
+          <AuthProvider>
+            <ResetPasswordPage onComplete={() => { window.location.href = '/'; }} />
+          </AuthProvider>
+        </CurrencyProvider>
+      </SettingsProvider>
+    );
+  }
+
   return (
     <SettingsProvider>
       <CurrencyProvider>

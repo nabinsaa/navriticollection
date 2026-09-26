@@ -142,7 +142,16 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     couponCode?: string,
     discount?: number
   ) => {
-    if (!user) throw new Error('User not authenticated');
+    const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+    if (authError) {
+      console.error('Order authentication error:', authError);
+      throw new Error(authError.message);
+    }
+    if (!authUser) throw new Error('Your session has expired. Please sign in again.');
+
+    // Never trust a client-side user object for ownership. The database row must
+    // use the authenticated Supabase user's id so the RLS policy can verify it.
+    const authenticatedUserId = authUser.id;
 
     const subtotal = cart.reduce((sum, item) => sum + item.product.price * item.quantity, 0);
     const shipping = subtotal > 5000 ? 0 : 99;
@@ -152,7 +161,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     const orderId = 'ORD-' + Date.now();
     const newOrder = {
       id: orderId,
-      user_id: user.id,
+      user_id: authenticatedUserId,
       items: cart,
       customer: { name: customerName, email: customerEmail },
       payment_method: 'cod',
@@ -167,7 +176,15 @@ export function OrderProvider({ children }: { children: ReactNode }) {
     };
 
     const { error } = await supabase.from('orders').insert([newOrder]);
-    if (error) throw error;
+    if (error) {
+      console.error('Order insert failed:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+      });
+      throw error;
+    }
 
     await loadOrders();
     clearCart();
