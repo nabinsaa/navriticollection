@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { 
   DollarSign, ShoppingCart, Users, Package, TrendingUp, TrendingDown,
   AlertTriangle, Star, MessageCircle, Tag, Truck, Bell, Settings, 
@@ -101,214 +101,309 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
 
   const loadDashboardData = async () => {
     try {
-      // Calculate date ranges
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
       const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
       const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-      
+
       let startDate = monthAgo;
-      if (dateRange === 'today') startDate = today;
-      else if (dateRange === '7days') startDate = weekAgo;
-      else if (dateRange === '30days') startDate = monthAgo;
-      else if (dateRange === '3months') startDate = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
-      else if (dateRange === '1year') startDate = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000);
 
-      // Load orders
-      const { data: orders } = await supabase
-        .from('orders')
-        .select('*')
-        .gte('created_at', startDate.toISOString())
-        .order('created_at', { ascending: false });
-
-      if (orders) {
-        const totalRevenue = orders.reduce((sum: number, o: any) => sum + o.total, 0);
-        const todayOrders = orders.filter((o: any) => new Date(o.created_at) >= today);
-        const yesterdayOrders = orders.filter((o: any) => 
-          new Date(o.created_at) >= yesterday && new Date(o.created_at) < today
-        );
-        const todayRevenue = todayOrders.reduce((sum: number, o: any) => sum + o.total, 0);
-        const yesterdayRevenue = yesterdayOrders.reduce((sum: number, o: any) => sum + o.total, 0);
-
-        const completedOrders = orders.filter((o: any) => o.status === 'delivered').length;
-        const cancelledOrders = orders.filter((o: any) => o.status === 'cancelled').length;
-        const fulfillmentRate = orders.length > 0 
-          ? Math.round((completedOrders / (orders.length - cancelledOrders)) * 100) 
-          : 0;
-
-        setStats(prev => ({
-          ...prev,
-          totalRevenue,
-          todayRevenue,
-          yesterdayRevenue,
-          weekRevenue: orders.filter((o: any) => new Date(o.created_at) >= weekAgo).reduce((s: number, o: any) => s + o.total, 0),
-          monthRevenue: totalRevenue,
-          totalOrders: orders.length,
-          pendingOrders: orders.filter((o: any) => o.status === 'pending').length,
-          confirmedOrders: orders.filter((o: any) => o.status === 'confirmed').length,
-          processingOrders: orders.filter((o: any) => o.status === 'processing').length,
-          shippedOrders: orders.filter((o: any) => o.status === 'shipped').length,
-          completedOrders,
-          cancelledOrders,
-          averageOrderValue: orders.length > 0 ? totalRevenue / orders.length : 0,
-          fulfillmentRate
-        }));
-
-        setRecentOrders(orders.slice(0, 5).map((o: any) => ({
-          id: o.id,
-          total: o.total,
-          status: o.status,
-          created_at: o.created_at,
-          customer: o.customer || { name: 'Unknown', email: '' },
-          items_count: o.items?.length || 0
-        })));
+      if (dateRange === 'today') {
+        startDate = today;
+      } else if (dateRange === '7days') {
+        startDate = weekAgo;
+      } else if (dateRange === '3months') {
+        startDate = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000);
+      } else if (dateRange === '1year') {
+        startDate = new Date(today.getTime() - 365 * 24 * 60 * 60 * 1000);
       }
 
-      // Load products
-      const { data: products } = await supabase
-        .from('products')
-        .select('*')
-        .is('deleted_at', null);
+      const [
+        ordersResult,
+        productsResult,
+        customersResult,
+        reviewsResult,
+        quotesResult,
+        notificationsResult
+      ] = await Promise.all([
+        supabase
+          .from('orders')
+          .select('id,total,status,created_at,customer,items,user_id')
+          .gte('created_at', startDate.toISOString())
+          .order('created_at', { ascending: false }),
 
-      if (products) {
-        const activeProducts = products.filter((p: any) => p.is_active);
-        const lowStock = activeProducts.filter((p: any) => 
-          p.stock_quantity !== undefined && 
-          p.stock_quantity <= (p.low_stock_threshold || 10) &&
-          p.stock_quantity > 0
-        );
-        const outOfStock = activeProducts.filter((p: any) => 
-          p.stock_quantity !== undefined && p.stock_quantity === 0
-        );
+        supabase
+          .from('products')
+          .select('id,name,image,category,price,is_active,stock_quantity,low_stock_threshold')
+          .is('deleted_at', null),
 
-        setStats(prev => ({
-          ...prev,
-          activeProducts: activeProducts.length,
-          lowStockProducts: lowStock.length,
-          outOfStockProducts: outOfStock.length
-        }));
+        supabase
+          .from('profiles')
+          .select('id,name,email,created_at')
+          .eq('role', 'user')
+          .order('created_at', { ascending: false })
+          .limit(5),
 
-        setLowStockProducts([...lowStock, ...outOfStock].slice(0, 5));
+        supabase
+          .from('feedback')
+          .select('rating'),
 
-        // Calculate top products by order data
-        const productSales: { [key: number]: { product: any; count: number; revenue: number } } = {};
-        orders?.forEach((order: any) => {
-          order.items?.forEach((item: any) => {
-            if (!productSales[item.product.id]) {
-              productSales[item.product.id] = { product: item.product, count: 0, revenue: 0 };
-            }
-            productSales[item.product.id].count += item.quantity;
-            productSales[item.product.id].revenue += item.product.price * item.quantity;
-          });
+        supabase
+          .from('user_quotes')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'pending'),
+
+        supabase
+          .from('notifications')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_read', false)
+      ]);
+
+      const orders = ordersResult.data || [];
+      const products = productsResult.data || [];
+      const customers = customersResult.data || [];
+      const reviews = reviewsResult.data || [];
+
+      let totalRevenue = 0;
+      let todayRevenue = 0;
+      let yesterdayRevenue = 0;
+      let weekRevenue = 0;
+      let pendingOrders = 0;
+      let confirmedOrders = 0;
+      let processingOrders = 0;
+      let shippedOrders = 0;
+      let completedOrders = 0;
+      let cancelledOrders = 0;
+
+      orders.forEach((order: any) => {
+        const total = Number(order.total) || 0;
+        const createdAt = new Date(order.created_at);
+
+        totalRevenue += total;
+
+        if (createdAt >= today) {
+          todayRevenue += total;
+        } else if (createdAt >= yesterday) {
+          yesterdayRevenue += total;
+        }
+
+        if (createdAt >= weekAgo) {
+          weekRevenue += total;
+        }
+
+        switch (order.status) {
+          case 'pending':
+            pendingOrders++;
+            break;
+          case 'confirmed':
+            confirmedOrders++;
+            break;
+          case 'processing':
+            processingOrders++;
+            break;
+          case 'shipped':
+            shippedOrders++;
+            break;
+          case 'delivered':
+            completedOrders++;
+            break;
+          case 'cancelled':
+            cancelledOrders++;
+            break;
+        }
+      });
+
+      const nonCancelledOrders = orders.length - cancelledOrders;
+
+      const fulfillmentRate =
+        nonCancelledOrders > 0
+          ? Math.round((completedOrders / nonCancelledOrders) * 100)
+          : 0;
+
+      setRecentOrders(
+        orders.slice(0, 5).map((order: any) => ({
+          id: order.id,
+          total: Number(order.total) || 0,
+          status: order.status,
+          created_at: order.created_at,
+          customer: order.customer || { name: 'Unknown', email: '' },
+          items_count: Array.isArray(order.items) ? order.items.length : 0
+        }))
+      );
+
+      const activeProducts = products.filter(
+        (product: any) => product.is_active
+      );
+
+      const lowStock = activeProducts.filter(
+        (product: any) =>
+          product.stock_quantity !== undefined &&
+          product.stock_quantity <= (product.low_stock_threshold || 10) &&
+          product.stock_quantity > 0
+      );
+
+      const outOfStock = activeProducts.filter(
+        (product: any) =>
+          product.stock_quantity !== undefined &&
+          product.stock_quantity === 0
+      );
+
+      setLowStockProducts(
+        [...lowStock, ...outOfStock].slice(0, 5)
+      );
+
+      const productSales: Record<
+        string,
+        {
+          product: any;
+          count: number;
+          revenue: number;
+        }
+      > = {};
+
+      orders.forEach((order: any) => {
+        if (!Array.isArray(order.items)) return;
+
+        order.items.forEach((item: any) => {
+          const product = item?.product;
+
+          if (!product?.id) return;
+
+          const productId = String(product.id);
+          const quantity = Number(item.quantity) || 0;
+          const price = Number(product.price) || 0;
+
+          if (!productSales[productId]) {
+            productSales[productId] = {
+              product,
+              count: 0,
+              revenue: 0
+            };
+          }
+
+          productSales[productId].count += quantity;
+          productSales[productId].revenue += price * quantity;
         });
+      });
 
-        const topProductsList = Object.values(productSales)
+      setTopProducts(
+        Object.values(productSales)
           .sort((a, b) => b.revenue - a.revenue)
           .slice(0, 5)
-          .map(item => ({
+          .map((item) => ({
             id: item.product.id,
             name: item.product.name,
             image: item.product.image,
             category: item.product.category,
             sales_count: item.count,
             revenue: item.revenue
-          }));
+          }))
+      );
 
-        setTopProducts(topProductsList);
-      }
-
-      // Load customers
-      const { data: customers } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('role', 'user')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (customers) {
-        const customersWithOrders = await Promise.all(
-          customers.map(async (c: any) => {
-            const { data: userOrders } = await supabase
-              .from('orders')
-              .select('total')
-              .eq('user_id', c.id);
-            
-            return {
-              id: c.id,
-              name: c.name,
-              email: c.email,
-              created_at: c.created_at,
-              orders_count: userOrders?.length || 0,
-              total_spent: userOrders?.reduce((sum: number, o: any) => sum + o.total, 0) || 0
-            };
-          })
+      const recentCustomers = customers.map((customer: any) => {
+        const customerOrders = orders.filter(
+          (order: any) => order.user_id === customer.id
         );
 
-        setRecentCustomers(customersWithOrders);
-        setStats(prev => ({
-          ...prev,
-          totalCustomers: customers.length,
-          newCustomersToday: customers.filter((c: any) => new Date(c.created_at) >= today).length
-        }));
-      }
+        return {
+          id: customer.id,
+          name: customer.name,
+          email: customer.email,
+          created_at: customer.created_at,
+          orders_count: customerOrders.length,
+          total_spent: customerOrders.reduce(
+            (sum: number, order: any) =>
+              sum + (Number(order.total) || 0),
+            0
+          )
+        };
+      });
 
-      // Load reviews
-      const { data: reviews } = await supabase.from('feedback').select('rating');
-      if (reviews && reviews.length > 0) {
-        const avgRating = reviews.reduce((sum: number, r: any) => sum + r.rating, 0) / reviews.length;
-        setStats(prev => ({ ...prev, totalReviews: reviews.length, averageRating: avgRating }));
-      }
+      setRecentCustomers(recentCustomers);
 
-      // Load pending quotes
-      const { count: pendingQuotes } = await supabase
-        .from('user_quotes')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'pending');
+      const totalReviews = reviews.length;
 
-      if (pendingQuotes !== null) {
-        setStats(prev => ({ ...prev, pendingQuotes }));
-      }
+      const averageRating =
+        totalReviews > 0
+          ? reviews.reduce(
+              (sum: number, review: any) =>
+                sum + (Number(review.rating) || 0),
+              0
+            ) / totalReviews
+          : 0;
 
-      // Load notifications
-      const { count: newNotifications } = await supabase
-        .from('notifications')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_read', false);
+      const pendingQuotes = quotesResult.count || 0;
+      const newNotifications = notificationsResult.count || 0;
 
-      if (newNotifications !== null) {
-        setStats(prev => ({ ...prev, newNotifications }));
-      }
+      const newCustomersToday = customers.filter(
+        (customer: any) =>
+          new Date(customer.created_at) >= today
+      ).length;
 
-      // Generate alerts
+      const newStats: DashboardStats = {
+        totalRevenue,
+        todayRevenue,
+        yesterdayRevenue,
+        weekRevenue,
+        monthRevenue: totalRevenue,
+        totalOrders: orders.length,
+        pendingOrders,
+        confirmedOrders,
+        processingOrders,
+        shippedOrders,
+        completedOrders,
+        cancelledOrders,
+        totalCustomers: customers.length,
+        newCustomersToday,
+        activeProducts: activeProducts.length,
+        lowStockProducts: lowStock.length,
+        outOfStockProducts: outOfStock.length,
+        averageOrderValue:
+          orders.length > 0
+            ? totalRevenue / orders.length
+            : 0,
+        totalReviews,
+        averageRating,
+        pendingQuotes,
+        newNotifications,
+        fulfillmentRate
+      };
+
+      setStats(newStats);
+
       const newAlerts: Alert[] = [];
-      if (stats.pendingOrders > 0) {
+
+      if (pendingOrders > 0) {
         newAlerts.push({
           type: 'warning',
           title: 'Pending Orders',
-          message: `${stats.pendingOrders} orders awaiting confirmation`,
+          message: `${pendingOrders} orders awaiting confirmation`,
           action: 'View Orders',
           navigateTo: 'orders'
         });
       }
-      if (stats.lowStockProducts > 0) {
+
+      if (lowStock.length > 0) {
         newAlerts.push({
           type: 'error',
           title: 'Low Stock Alert',
-          message: `${stats.lowStockProducts} products running low on stock`,
+          message: `${lowStock.length} products running low on stock`,
           action: 'View Inventory',
           navigateTo: 'products'
         });
       }
-      if (stats.pendingQuotes > 0) {
+
+      if (pendingQuotes > 0) {
         newAlerts.push({
           type: 'info',
           title: 'Quote Requests',
-          message: `${stats.pendingQuotes} quotes awaiting review`,
+          message: `${pendingQuotes} quotes awaiting review`,
           action: 'Review Quotes',
           navigateTo: 'quotes'
         });
       }
+
       setAlerts(newAlerts);
 
     } catch (error) {
@@ -318,7 +413,6 @@ export default function AdminDashboard({ onNavigate }: AdminDashboardProps) {
       setRefreshing(false);
     }
   };
-
   const handleRefresh = () => {
     setRefreshing(true);
     loadDashboardData();
@@ -1074,3 +1168,4 @@ function QuickAction({ icon, label, onClick, color }: QuickActionProps) {
     </button>
   );
 }
+
