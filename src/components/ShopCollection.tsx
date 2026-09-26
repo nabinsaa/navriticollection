@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { Search, Filter, Grid, List, ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 import { Product } from '../data/products';
 import { useCurrency } from '../context/CurrencyContext';
@@ -56,7 +56,7 @@ export default function ShopCollection({
       try {
         const { data, error } = await supabase
           .from('categories')
-          .select('*')
+          .select('name')
           .eq('is_active', true)
           .order('display_order', { ascending: true });
 
@@ -87,7 +87,7 @@ export default function ShopCollection({
       try {
         const { data, error } = await supabase
           .from('products')
-          .select('*')
+          .select('id,name,origin,region,category,price,weight,material,process,size,color,description,story,image,rating,reviews,intensity,tags,stock_quantity,low_stock_threshold,sku,discount_price,is_featured,is_new_arrival,is_bestseller,additional_images,created_at')
           .eq('is_active', true)
           .is('deleted_at', null)
           .order('created_at', { ascending: false });
@@ -695,7 +695,7 @@ function ProductCardEnhanced({ product, onClick, onAddToCart, formatPrice }: Pro
     >
       {/* Image */}
       <div className="relative h-72 bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden">
-        {product.image.startsWith('') || product.image.startsWith('http') ? (
+        {product.image.startsWith('http://') || product.image.startsWith('https://') ? (
           <img
             src={product.image}
             alt={product.name}
@@ -852,7 +852,7 @@ function ProductCardList({ product, onClick, onAddToCart, formatPrice }: Product
       <div className="flex flex-col md:flex-row">
         {/* Image */}
         <div className="relative md:w-64 h-64 md:h-auto bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden flex-shrink-0">
-          {product.image.startsWith('') || product.image.startsWith('http') ? (
+          {product.image.startsWith('http://') || product.image.startsWith('https://') ? (
             <img
               src={product.image}
               alt={product.name}
@@ -1000,3 +1000,4 @@ function ProductCardList({ product, onClick, onAddToCart, formatPrice }: Product
     </div>
   );
 }
+

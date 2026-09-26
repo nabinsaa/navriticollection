@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, lazy, Suspense } from 'react';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { OrderProvider, useOrder } from './context/OrderContext';
@@ -7,20 +7,20 @@ import { WishlistProvider } from './context/WishlistContext';
 import { categories, Product } from './data/products';
 import Header from './components/Header';
 import ProductCard from './components/ProductCard';
-import ProductDetail from './components/ProductDetail';
+const ProductDetail = lazy(() => import('./components/ProductDetail'));
 import Cart from './components/Cart';
 import Sidebar from './components/Sidebar';
 import LoginModal from './components/LoginModal';
-import OrdersPage from './components/OrdersPage';
-import WishlistPage from './components/WishlistPage';
-import CheckoutPage from './components/CheckoutPage';
-import AdminPanel from './components/admin/AdminPanel';
+const OrdersPage = lazy(() => import('./components/OrdersPage'));
+const WishlistPage = lazy(() => import('./components/WishlistPage'));
+const CheckoutPage = lazy(() => import('./components/CheckoutPage'));
+const AdminPanel = lazy(() => import('./components/admin/AdminPanel'));
 import ShopCollection from './components/ShopCollection';
-import QuotesPage from './components/QuotesPage';
-import SubmitQuotePage from './components/SubmitQuotePage';
-import FeedbackPage from './components/FeedbackPage';
-import InfoPage from './components/InfoPage';
-import ContactPage from './components/ContactPage';
+const QuotesPage = lazy(() => import('./components/QuotesPage'));
+const SubmitQuotePage = lazy(() => import('./components/SubmitQuotePage'));
+const FeedbackPage = lazy(() => import('./components/FeedbackPage'));
+const InfoPage = lazy(() => import('./components/InfoPage'));
+const ContactPage = lazy(() => import('./components/ContactPage'));
 import ResetPasswordPage from './components/ResetPasswordPage';
 import { supabase, isSupabaseConnected } from './lib/supabase';
 
@@ -37,42 +37,7 @@ function AppContent() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const { addToCart } = useOrder();
   const { isAdmin } = useAuth();
-
-  // Load products from Supabase
-  const loadProducts = async () => {
-    if (isSupabaseConnected && supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('products')
-          .select('*')
-          .eq('is_active', true)
-          .is('deleted_at', null)
-          .order('created_at', { ascending: false });
-
-        if (error) {
-          console.error('Error loading products:', error);
-          setProducts([]);
-        } else {
-          setProducts(data || []);
-        }
-      } catch (error) {
-        console.error('Error:', error);
-        setProducts([]);
-      }
-    }
-    setIsLoadingProducts(false);
-  };
-
-  useEffect(() => {
-    loadProducts();
-  }, [currentView]);
-
-  const filteredProducts =
-    selectedCategory === 'All'
-      ? products
-      : products.filter((p) => p.category === selectedCategory);
-
-  const handleNavigate = (view: string) => {
+const handleNavigate = (view: string) => {
     if ((view === 'admin') && !isAdmin) {
       setLoginModalOpen(true);
       return;
@@ -111,6 +76,11 @@ function AppContent() {
       <LoginModal isOpen={loginModalOpen} onClose={() => setLoginModalOpen(false)} />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <Suspense fallback={
+          <div className="min-h-[50vh] flex items-center justify-center">
+            <div className="w-8 h-8 border-4 border-stone-300 border-t-stone-900 rounded-full animate-spin" />
+          </div>
+        }>
         {currentView === 'shop' && (
           <ShopCollection
             categories={categories}
@@ -246,6 +216,7 @@ function AppContent() {
             onBack={() => setCurrentView('shop')}
           />
         )}
+        </Suspense>
       </main>
     </div>
   );
@@ -278,3 +249,4 @@ export default function App() {
     </SettingsProvider>
   );
 }
+
