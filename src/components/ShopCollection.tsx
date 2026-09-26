@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Search, Filter, Grid, List, ChevronLeft, ChevronRight, SlidersHorizontal, X } from 'lucide-react';
 import { Product } from '../data/products';
 import { useCurrency } from '../context/CurrencyContext';
@@ -695,7 +695,7 @@ function ProductCardEnhanced({ product, onClick, onAddToCart, formatPrice }: Pro
     >
       {/* Image */}
       <div className="relative h-72 bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden">
-        {product.image.startsWith('http://') || product.image.startsWith('https://') ? (
+        {product.image.startsWith('http://') || product.image.startsWith('https://') || product.image.startsWith('data:image/') ? (
           <img
             src={product.image}
             alt={product.name}
@@ -852,7 +852,7 @@ function ProductCardList({ product, onClick, onAddToCart, formatPrice }: Product
       <div className="flex flex-col md:flex-row">
         {/* Image */}
         <div className="relative md:w-64 h-64 md:h-auto bg-gradient-to-br from-amber-50 to-orange-50 overflow-hidden flex-shrink-0">
-          {product.image.startsWith('http://') || product.image.startsWith('https://') ? (
+          {product.image.startsWith('http://') || product.image.startsWith('https://') || product.image.startsWith('data:image/') ? (
             <img
               src={product.image}
               alt={product.name}
@@ -1000,4 +1000,6 @@ function ProductCardList({ product, onClick, onAddToCart, formatPrice }: Product
     </div>
   );
 }
+
+
 
